@@ -178,7 +178,7 @@ if __name__ == "__main__":
 			# Update the learning rate.
 			# scheduler.step()
 			pbar.update()
-			if (step + 1) % dev_steps == 0 or step == 0:
+			if (step + 1) % dev_steps == 0:
 				# Perform validation with the model and log the performance
 				logging.info("Running Validation...")
 				# Put the model in evaluation mode--the dropout layers behave differently

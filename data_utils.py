@@ -42,7 +42,7 @@ def load_rel_mapping(filepath):
 	return rel_mapping
 
 
-def split_data(data, train_ratio=0.6, dev_ratio=0.2):
+def split_data(data, train_ratio=0.7, dev_ratio=0.1):
 	train_size = int(len(data) * train_ratio)
 	dev_size = int(len(data) * dev_ratio)
 	train_data = data[:train_size]
