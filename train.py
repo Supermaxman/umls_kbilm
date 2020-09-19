@@ -18,9 +18,10 @@ if __name__ == "__main__":
 	seed = 0
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
+	save_directory = 'models'
+	log_directory = 'logs'
+	model_name = 'v1'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	save_directory = 'models/v1'
-	log_directory = 'logs/v1'
 	batch_size = 8
 	weight_decay = 0.01
 	learning_rate = 5e-5
@@ -32,6 +33,14 @@ if __name__ == "__main__":
 	random.seed(seed)
 	torch.manual_seed(seed)
 	np.random.seed(seed)
+
+	save_directory = os.path.join(save_directory, model_name)
+	log_directory = os.path.join(log_directory, model_name)
+
+	if not os.path.exists(save_directory):
+		os.mkdir(save_directory)
+	if not os.path.exists(log_directory):
+		os.mkdir(log_directory)
 
 	# Also add the stream handler so that it logs on STD out as well
 	# Ref: https://stackoverflow.com/a/46098711/4535284
@@ -60,7 +69,16 @@ if __name__ == "__main__":
 	logging.info('Loading model')
 	tokenizer = BertTokenizer.from_pretrained(pre_model_name)
 	config = BertConfig.from_pretrained(pre_model_name)
+	config.batch_size = batch_size
+	config.weight_decay = weight_decay
+	config.learning_rate = learning_rate
+	config.epochs = epochs
 	config.gamma = gamma
+	config.max_seq_len = max_seq_len
+	config.model_name = model_name
+	config.pre_model_name = pre_model_name
+	config.seed = seed
+
 	model = KnowledgeBaseInfusedBert.from_pretrained(pre_model_name, config=config)
 	model.to(device)
 
@@ -105,10 +123,6 @@ if __name__ == "__main__":
 		weight_decay=weight_decay,
 		correct_bias=False
 	)
-	if not os.path.exists(save_directory):
-		os.mkdir(save_directory)
-	if not os.path.exists(log_directory):
-		os.mkdir(log_directory)
 
 	writer = SummaryWriter(log_directory)
 	for epoch in range(epochs):
