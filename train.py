@@ -24,6 +24,7 @@ if __name__ == "__main__":
 	epochs = 100
 	gamma = 6.0
 	max_seq_len = 64
+	dev_log_frequency = 100
 
 	random.seed(seed)
 	torch.manual_seed(seed)
@@ -100,7 +101,6 @@ if __name__ == "__main__":
 		# Reset timer for each epoch
 		model.train()
 
-		dev_log_frequency = 1
 		n_steps = len(train_dataloader)
 		dev_steps = int(n_steps / dev_log_frequency)
 		for step, batch in enumerate(pbar):
@@ -162,7 +162,9 @@ if __name__ == "__main__":
 				# FN = 0
 				#
 				# print(f"Task:{micro_name:>15}\tN={TP + FN:.0f}\tF1={micro_f1:.4f}\tP={micro_p:.4f}\tR={micro_r:.4f}\tTP={TP:.0f}\tFP={FP:.0f}\tFN={FN:.0f}")
-
+				print('Saving model...')
+				model.save_pretrained(save_directory)
+				tokenizer.save_pretrained(save_directory)
 				# Put the model back in train setting
 				model.train()
 
