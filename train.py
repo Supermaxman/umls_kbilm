@@ -20,7 +20,7 @@ if __name__ == "__main__":
 	data_folder = 'data'
 	save_directory = 'models'
 	log_directory = 'logs'
-	model_name = 'v1'
+	model_name = 'umls-kbilm-v1'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	batch_size = 8
 	weight_decay = 0.01
