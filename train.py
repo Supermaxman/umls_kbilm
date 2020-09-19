@@ -18,7 +18,7 @@ if __name__ == "__main__":
 	data_folder = 'data'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	save_directory = 'models/test'
-	batch_size = 16
+	batch_size = 8
 	weight_decay = 0.01
 	learning_rate = 5e-5
 	epochs = 100
@@ -46,8 +46,8 @@ if __name__ == "__main__":
 
 	train_data, dev_data, test_data = split_data(relations)
 	print(f'Train data size: {len(train_data)}')
-	print(f'Train data size: {len(dev_data)}')
-	print(f'Train data size: {len(test_data)}')
+	print(f'Dev data size: {len(dev_data)}')
+	print(f'Test data size: {len(test_data)}')
 
 	train_dataset = UmlsRelationDataset(train_data)
 	dev_dataset = UmlsRelationDataset(dev_data)
