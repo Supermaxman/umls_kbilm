@@ -221,9 +221,9 @@ class UmlsRelationDataset(Dataset):
 		if torch.is_tensor(idx):
 			idx = idx.tolist()
 
-		relations = self.relations[idx]
+		relation = self.relations[idx]
 
-		return relations
+		return relation
 
 
 class RelationCollator(object):

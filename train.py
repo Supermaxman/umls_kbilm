@@ -103,6 +103,11 @@ if __name__ == "__main__":
 		n_steps = len(train_dataloader)
 		dev_steps = int(n_steps / dev_log_frequency)
 		for step, batch in enumerate(pbar):
+			if step == 0:
+				print(f'pos_size={batch["pos_size"]}')
+				print(f'neg_size={batch["neg_size"]}')
+				print(f'total_size={batch["total_size"]}')
+				print(f'input_ids={batch["input_ids"].shape}')
 			# Forward
 			input_dict = {
 				"input_ids": batch["input_ids"].to(device),
@@ -111,10 +116,6 @@ if __name__ == "__main__":
 				"neg_size": batch["neg_size"],
 				"total_size": batch["total_size"],
 			}
-			if step == 0:
-				print(f'pos_size={batch["pos_size"]}')
-				print(f'neg_size={batch["neg_size"]}')
-				print(f'total_size={batch["total_size"]}')
 
 			loss, pos_energy, neg_energy = model(**input_dict)
 			# loss = loss / accumulation_steps
