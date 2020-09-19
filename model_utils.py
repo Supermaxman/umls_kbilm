@@ -52,5 +52,12 @@ class KnowledgeBaseInfusedBert(BertPreTrainedModel):
 		neg_loss = neg_loss.sum(dim=1)
 		loss = (pos_loss + neg_loss).mean()
 
-		return loss, pos_energies, neg_energies
+		results = {
+			'loss': loss,
+			'pos_energies': pos_energies,
+			'neg_energies': neg_energies,
+			'neg_probs': neg_probs
+		}
+
+		return results
 

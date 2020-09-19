@@ -1,12 +1,14 @@
 import os
-from umls_reader import read_umls
-from umls import UmlsAtom, UmlsRelation
-from kb_utils import RelationType, Concept, Relation, RelationExampleCreator
 import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
 import pickle
 import random
+import logging
+
+from umls_reader import read_umls
+from umls import UmlsAtom, UmlsRelation
+from kb_utils import RelationType, Concept, Relation, RelationExampleCreator
 
 
 def load_rel_merge_mapping(filepath):
@@ -54,12 +56,12 @@ def load_umls(umls_directory, data_folder='./data'):
 
 	cache_file = os.path.join(data_folder, 'umls_cache.pickle')
 	if os.path.exists(cache_file):
-		print('Loading cache file...')
+		logging.info('Loading cache file...')
 		with open(cache_file, 'rb') as f:
 			concepts, relation_types, relations = pickle.load(f)
 		return concepts, relation_types, relations
 
-	print('No cache file found, loading from umls directory...')
+	logging.info('No cache file found, loading from umls directory...')
 	rrf_file = os.path.join(umls_directory, 'META', 'MRREL.RRF')
 	conso_file = os.path.join(umls_directory, 'META', 'MRCONSO.RRF')
 	# TODO cache return of function in pickle, no need to generate every time.
@@ -69,7 +71,7 @@ def load_umls(umls_directory, data_folder='./data'):
 
 	valid_rel_cuis = set(rel_merge_mapping.keys())
 	languages = {'ENG'}
-	print(f'Reading umls concepts...')
+	logging.info(f'Reading umls concepts...')
 	triples = set()
 
 	def is_preferred(x):
@@ -94,7 +96,7 @@ def load_umls(umls_directory, data_folder='./data'):
 	# First pass through to get all possible cuis which we have atoms for.
 	for atom in tqdm(concept_iter, desc="reading", total=total_matching_concept_count):
 		seen_cuis.add(atom.cui)
-	print(f'Matching cui count: {len(seen_cuis)}')
+	logging.info(f'Matching cui count: {len(seen_cuis)}')
 
 	def umls_rel_filter(x):
 		# remove recursive relations
@@ -143,7 +145,7 @@ def load_umls(umls_directory, data_folder='./data'):
 			else:
 				if cui_rela not in rela_mapping:
 					rela_mapping[cui_rela] = ' '.join(cui_rela.split('_'))
-					print(f'rela {cui_rela} not found in text mapping, defaulting to {rela_mapping[cui_rela]}.')
+					logging.info(f'rela {cui_rela} not found in text mapping, defaulting to {rela_mapping[cui_rela]}.')
 				rel_text = rela_mapping[cui_rela]
 			relation_types[rel_cui] = RelationType(rel_cui, rel_text)
 		# TODO double check order here
@@ -151,8 +153,8 @@ def load_umls(umls_directory, data_folder='./data'):
 		seen_rel_concept_cuis.add(rel.cui2)
 		triples.add((rel.cui2, rel_cui, rel.cui1))
 		rel_count += 1
-	print(f'Matching rel count: {rel_count}')
-	print(f'Rel types: {len(relation_types)}')
+	logging.info(f'Matching rel count: {rel_count}')
+	logging.info(f'Rel types: {len(relation_types)}')
 
 	def umls_atom_filter(x):
 		# filter out non-english atoms
@@ -164,7 +166,7 @@ def load_umls(umls_directory, data_folder='./data'):
 			return False
 		return True
 
-	print(f'Reading umls atoms...')
+	logging.info(f'Reading umls atoms...')
 	atom_iter = read_umls(
 		conso_file,
 		UmlsAtom,
@@ -182,7 +184,7 @@ def load_umls(umls_directory, data_folder='./data'):
 			concepts[atom.cui] = Concept(atom.cui, atom.string)
 			atom_count += 1
 
-	print(f'Read {len(concepts)} concepts')
+	logging.info(f'Read {len(concepts)} concepts')
 	relations = []
 	for subj_cui, rel_cui, obj_cui in tqdm(triples, desc='creating relations', total=len(triples)):
 		relation = Relation(
@@ -193,7 +195,7 @@ def load_umls(umls_directory, data_folder='./data'):
 		relations.append(relation)
 
 	random.shuffle(relations)
-	print('Saving cache file...')
+	logging.info('Saving cache file...')
 	with open(cache_file, 'wb') as f:
 		pickle.dump((concepts, relation_types, relations), f)
 	return concepts, relation_types, relations
