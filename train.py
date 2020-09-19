@@ -18,7 +18,7 @@ if __name__ == "__main__":
 	data_folder = 'data'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	save_directory = 'models/test'
-	batch_size = 2
+	batch_size = 4
 	weight_decay = 0.01
 	learning_rate = 5e-5
 	epochs = 100
@@ -44,6 +44,7 @@ if __name__ == "__main__":
 	config = BertConfig.from_pretrained(pre_model_name)
 	config.gamma = gamma
 	model = KnowledgeBaseInfusedBert.from_pretrained(pre_model_name, config=config)
+	model.to(device)
 
 	train_data, dev_data, test_data = split_data(relations)
 	print(f'Train data size: {len(train_data)}')
