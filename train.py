@@ -23,6 +23,7 @@ if __name__ == "__main__":
 	learning_rate = 5e-5
 	epochs = 100
 	gamma = 6.0
+	max_seq_len = 64
 
 	random.seed(seed)
 	torch.manual_seed(seed)
@@ -54,7 +55,7 @@ if __name__ == "__main__":
 	test_dataset = UmlsRelationDataset(test_data)
 
 	example_creator = NameRelationExampleCreator()
-	collator = RelationCollator(tokenizer, example_creator, )
+	collator = RelationCollator(tokenizer, example_creator, max_seq_len)
 
 	train_dataloader = DataLoader(
 		train_dataset,
