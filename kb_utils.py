@@ -70,4 +70,4 @@ class NameRelationExampleCreator(RelationExampleCreator):
 		super().__init__()
 
 	def create(self, rel: Relation):
-		return f'{rel.subj.concept_name} {rel.rel_type.relation_name} {rel.obj.concept_name}'
+		return f'{rel.subj.concept_name} {rel.rel_type.relation_name.lower()} {rel.obj.concept_name}'

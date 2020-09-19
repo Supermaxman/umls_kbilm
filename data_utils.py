@@ -128,7 +128,7 @@ def load_umls(umls_directory, data_folder='./data'):
 		# TODO double check order here
 		seen_rel_concept_cuis.add(rel.cui1)
 		seen_rel_concept_cuis.add(rel.cui2)
-		triples.add((rel.cui1, rel_cui, rel.cui2))
+		triples.add((rel.cui2, rel_cui, rel.cui1))
 		rel_count += 1
 	print(f'Matching rel count: {rel_count}')
 	print(f'Rel types: {len(relation_types)}')
@@ -150,7 +150,8 @@ def load_umls(umls_directory, data_folder='./data'):
 		umls_filter=umls_atom_filter
 	)
 	atom_count = 0
-	total_matching_atom_count = 6873557
+	# total_matching_atom_count = 6873557
+	total_matching_atom_count = 7753235
 	concepts = {}
 
 	# finally, get atoms for only concepts which we have relations for.
