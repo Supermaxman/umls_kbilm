@@ -238,12 +238,12 @@ class RelationCollator(object):
 		neg_examples = []
 		for rel in relations:
 			pos_example = self.example_creator.create(rel)
-			pos_examples.append(self.example_creator)
+			pos_examples.append(pos_example)
 			for other_rel in relations:
 				if other_rel != rel:
-					neg_rel_subj = Relation(subj=other_rel.subj, rel_type=pos_example.rel_type, obj=pos_example.obj)
+					neg_rel_subj = Relation(subj=other_rel.subj, rel_type=rel.rel_type, obj=rel.obj)
 					neg_rel_subj_example = self.example_creator.create(neg_rel_subj)
-					neg_rel_obj = Relation(subj=pos_example.subj, rel_type=pos_example.rel_type, obj=other_rel.obj)
+					neg_rel_obj = Relation(subj=rel.subj, rel_type=rel.rel_type, obj=other_rel.obj)
 					neg_rel_obj_example = self.example_creator.create(neg_rel_obj)
 					neg_examples.append(neg_rel_subj_example)
 					neg_examples.append(neg_rel_obj_example)
