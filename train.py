@@ -208,7 +208,7 @@ if __name__ == "__main__":
 						total_count += dev_batch["pos_size"]
 						total_dev_loss += dev_results['loss'].sum().item()
 						# [pos_size, neg_size]
-						dev_correct = (dev_results['dev_pos_energy'].unsqueeze(1) < dev_results['dev_neg_energy']).float()
+						dev_correct = (dev_results['pos_energies'].unsqueeze(1) < dev_results['neg_energies']).float()
 						# []
 						dev_exp_correct = (dev_results['neg_probs'] * dev_correct).sum(dim=1).sum(dim=0).item()
 						total_exp_correct += dev_exp_correct
