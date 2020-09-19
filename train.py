@@ -18,7 +18,7 @@ if __name__ == "__main__":
 	data_folder = 'data'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	save_directory = 'models/test'
-	batch_size = 4
+	batch_size = 2
 	weight_decay = 0.01
 	learning_rate = 5e-5
 	epochs = 100
