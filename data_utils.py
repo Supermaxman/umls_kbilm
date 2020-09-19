@@ -1,6 +1,6 @@
 import os
-from . import umls_reader
-from . import umls
+from umls_reader import read_umls
+from umls import UmlsAtom, UmlsRelation
 from kb_utils import RelationType, Concept, Relation, RelationExampleCreator
 import torch
 from torch.utils.data import Dataset
@@ -63,9 +63,9 @@ def load_umls(umls_directory, data_folder='./data'):
 			return True
 		return False
 
-	concept_iter = umls_reader.read_umls(
+	concept_iter = read_umls(
 		conso_file,
-		umls.UmlsAtom,
+		UmlsAtom,
 		umls_filter=umls_concept_filter
 	)
 	seen_cuis = set()
@@ -102,9 +102,9 @@ def load_umls(umls_directory, data_folder='./data'):
 			return False
 		return True
 
-	rel_iter = umls_reader.read_umls(
+	rel_iter = read_umls(
 		rrf_file,
-		umls.UmlsRelation,
+		UmlsRelation,
 		umls_filter=umls_rel_filter
 	)
 	rel_count = 0
@@ -144,9 +144,9 @@ def load_umls(umls_directory, data_folder='./data'):
 		return True
 
 	print(f'Reading umls atoms...')
-	atom_iter = umls_reader.read_umls(
+	atom_iter = read_umls(
 		conso_file,
-		umls.UmlsAtom,
+		UmlsAtom,
 		umls_filter=umls_atom_filter
 	)
 	atom_count = 0
