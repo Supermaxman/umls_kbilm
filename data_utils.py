@@ -227,9 +227,10 @@ class UmlsRelationDataset(Dataset):
 
 
 class RelationCollator(object):
-	def __init__(self, tokenizer, example_creator: RelationExampleCreator):
+	def __init__(self, tokenizer, example_creator: RelationExampleCreator, max_seq_len: int):
 		self.tokenizer = tokenizer
 		self.example_creator = example_creator
+		self.max_seq_len = max_seq_len
 
 	def __call__(self, relations):
 		# creates text examples
@@ -255,7 +256,7 @@ class RelationCollator(object):
 			padding=True,
 			return_tensors='pt',
 			truncation=True,
-			max_length=64
+			max_length=self.max_seq_len
 		)
 		batch['pos_size'] = len(relations)
 		batch['neg_size'] = len(neg_examples) // len(relations)

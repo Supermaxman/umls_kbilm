@@ -54,7 +54,7 @@ if __name__ == "__main__":
 	test_dataset = UmlsRelationDataset(test_data)
 
 	example_creator = NameRelationExampleCreator()
-	collator = RelationCollator(tokenizer, example_creator)
+	collator = RelationCollator(tokenizer, example_creator, )
 
 	train_dataloader = DataLoader(
 		train_dataset,
@@ -110,6 +110,10 @@ if __name__ == "__main__":
 				"neg_size": batch["neg_size"],
 				"total_size": batch["total_size"],
 			}
+			if step == 0:
+				print(f'pos_size={batch["pos_size"]}')
+				print(f'neg_size={batch["neg_size"]}')
+				print(f'total_size={batch["total_size"]}')
 
 			loss, pos_energy, neg_energy = model(**input_dict)
 			# loss = loss / accumulation_steps
