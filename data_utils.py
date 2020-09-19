@@ -5,6 +5,8 @@ from kb_utils import RelationType, Concept, Relation, RelationExampleCreator
 import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
+import pickle
+import random
 
 
 def load_rel_merge_mapping(filepath):
@@ -38,10 +40,29 @@ def load_rel_mapping(filepath):
 	return rel_mapping
 
 
+def split_data(data, train_ratio=0.6, dev_ratio=0.2):
+	train_size = int(len(data) * train_ratio)
+	dev_size = int(len(data) * dev_ratio)
+	train_data = data[:train_size]
+	dev_data = data[train_size:train_size + dev_size]
+	test_data = data[train_size + dev_size:]
+
+	return train_data, dev_data, test_data
+
+
 def load_umls(umls_directory, data_folder='./data'):
+
+	cache_file = os.path.join(data_folder, 'umls_cache.pickle')
+	if os.path.exists(cache_file):
+		print('Loading cache file...')
+		with open(cache_file, 'rb') as f:
+			concepts, relation_types, relations = pickle.load(f)
+		return concepts, relation_types, relations
+
+	print('No cache file found, loading from umls directory...')
 	rrf_file = os.path.join(umls_directory, 'META', 'MRREL.RRF')
 	conso_file = os.path.join(umls_directory, 'META', 'MRCONSO.RRF')
-
+	# TODO cache return of function in pickle, no need to generate every time.
 	rel_merge_mapping = load_rel_merge_mapping(os.path.join(data_folder, 'rel_merge_mapping.txt'))
 	rel_mapping = load_rel_mapping(os.path.join(data_folder, 'rel_desc.txt'))
 	rela_mapping = load_rela_mapping(os.path.join(data_folder, 'rela_desc.txt'))
@@ -170,10 +191,26 @@ def load_umls(umls_directory, data_folder='./data'):
 			obj=concepts[obj_cui]
 		)
 		relations.append(relation)
+
+	random.shuffle(relations)
+	print('Saving cache file...')
+	with open(cache_file, 'wb') as f:
+		pickle.dump((concepts, relation_types, relations), f)
 	return concepts, relation_types, relations
 
 
-class UmlsDataset(Dataset):
+def get_optimizer_params(model, weight_decay):
+	param_optimizer = list(model.named_parameters())
+	no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+	optimizer_params = [
+		{'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)],
+		 'weight_decay': weight_decay},
+		{'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}]
+
+	return optimizer_params
+
+
+class UmlsRelationDataset(Dataset):
 	def __init__(self, relations):
 		self.relations = relations
 
@@ -196,7 +233,21 @@ class RelationCollator(object):
 
 	def __call__(self, relations):
 		# creates text examples
-		examples = [self.example_creator.create(rel) for rel in relations]
+
+		pos_examples = []
+		neg_examples = []
+		for rel in relations:
+			pos_example = self.example_creator.create(rel)
+			pos_examples.append(self.example_creator)
+			for other_rel in relations:
+				if other_rel != rel:
+					neg_rel_subj = Relation(subj=other_rel.subj, rel_type=pos_example.rel_type, obj=pos_example.obj)
+					neg_rel_subj_example = self.example_creator.create(neg_rel_subj)
+					neg_rel_obj = Relation(subj=pos_example.subj, rel_type=pos_example.rel_type, obj=other_rel.obj)
+					neg_rel_obj_example = self.example_creator.create(neg_rel_obj)
+					neg_examples.append(neg_rel_subj_example)
+					neg_examples.append(neg_rel_obj_example)
+		examples = pos_examples + neg_examples
 
 		batch = self.tokenizer.batch_encode_plus(
 			batch_text_or_text_pairs=examples,
@@ -204,8 +255,10 @@ class RelationCollator(object):
 			padding=True,
 			return_tensors='pt',
 			truncation=True,
-			# TODO compute percentile
 			max_length=64
 		)
+		batch['pos_size'] = len(relations)
+		batch['neg_size'] = len(neg_examples) // len(relations)
+		batch['total_size'] = len(examples)
 
 		return batch
