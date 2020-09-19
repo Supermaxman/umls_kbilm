@@ -232,6 +232,7 @@ if __name__ == "__main__":
 
 				logging.info(f"DEV:\tLoss={dev_loss:.4f}\tExpected Accuracy={dev_exp_acc:.4f}\tUniform Accuracy={dev_uni_acc:.4f}")
 				logging.info('Saving model...')
+				config.save_pretrained(save_directory)
 				model.save_pretrained(save_directory)
 				tokenizer.save_pretrained(save_directory)
 				# Put the model back in train setting
@@ -239,7 +240,7 @@ if __name__ == "__main__":
 
 		# Calculate the average loss over all of the batches.
 		avg_train_loss = total_train_loss / len(train_dataloader)
-
+	config.save_pretrained(save_directory)
 	model.save_pretrained(save_directory)
 	tokenizer.save_pretrained(save_directory)
 	writer.close()
