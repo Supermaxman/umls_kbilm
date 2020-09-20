@@ -29,6 +29,7 @@ if __name__ == "__main__":
 	gamma = 24.0
 	max_seq_len = 64
 	dev_log_frequency = 10
+	grad_norm_clip = 1.0
 
 	random.seed(seed)
 	torch.manual_seed(seed)
@@ -78,6 +79,7 @@ if __name__ == "__main__":
 	config.model_name = model_name
 	config.pre_model_name = pre_model_name
 	config.seed = seed
+	config.grad_norm_clip = grad_norm_clip
 
 	model = KnowledgeBaseInfusedBert.from_pretrained(pre_model_name, config=config)
 	model.to(device)
@@ -171,7 +173,7 @@ if __name__ == "__main__":
 			writer.add_scalar('train/train_uniform_acc', pos_uniform_acc, step)
 			# Clip the norm of the gradients to 1.0.
 			# This is to help prevent the "exploding gradients" problem.
-			torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+			torch.nn.utils.clip_grad_norm_(model.parameters(), grad_norm_clip)
 
 			# Update parameters
 			optimizer.step()
