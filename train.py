@@ -26,9 +26,9 @@ if __name__ == "__main__":
 	weight_decay = 0.01
 	learning_rate = 5e-5
 	epochs = 100
-	gamma = 6.0
+	gamma = 24.0
 	max_seq_len = 64
-	dev_log_frequency = 100
+	dev_log_frequency = 20
 
 	random.seed(seed)
 	torch.manual_seed(seed)
