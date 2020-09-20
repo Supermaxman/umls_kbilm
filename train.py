@@ -28,7 +28,7 @@ if __name__ == "__main__":
 	epochs = 100
 	gamma = 24.0
 	max_seq_len = 64
-	dev_log_frequency = 20
+	dev_log_frequency = 10
 
 	random.seed(seed)
 	torch.manual_seed(seed)
