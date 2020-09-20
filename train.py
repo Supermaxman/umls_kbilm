@@ -159,7 +159,7 @@ if __name__ == "__main__":
 			# Accumulate loss
 			loss_value = loss.item()
 			pos_exp_acc = results['pos_exp_correct'].item() / batch["pos_size"]
-			pos_uniform_acc = results['pos_uniform_correct'].item() / batch["pos_size"]
+			pos_uniform_acc = results['pos_uniform_correct'].item() / (2 * batch["pos_size"])
 			total_train_loss += loss_value
 
 			# Backward: compute gradients
