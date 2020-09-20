@@ -156,6 +156,8 @@ if __name__ == "__main__":
 			# loss = loss / accumulation_steps
 			# Accumulate loss
 			loss_value = loss.item()
+			pos_exp_acc = results['pos_exp_correct'].item() / batch["pos_size"]
+			pos_uniform_acc = results['pos_uniform_correct'].item() / batch["pos_size"]
 			total_train_loss += loss_value
 
 			# Backward: compute gradients
@@ -165,6 +167,8 @@ if __name__ == "__main__":
 
 			pbar.set_description(f"Epoch:{epoch + 1}|Batch:{step}/{len(train_dataloader)}|Avg. Loss:{avg_train_loss:.4f}|Loss:{loss_value:.4f}")
 			writer.add_scalar('train/train_loss', loss_value, step)
+			writer.add_scalar('train/train_exp_acc', pos_exp_acc, step)
+			writer.add_scalar('train/train_uniform_acc', pos_uniform_acc, step)
 			# Clip the norm of the gradients to 1.0.
 			# This is to help prevent the "exploding gradients" problem.
 			torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -206,17 +210,12 @@ if __name__ == "__main__":
 						# dev_neg_probs [pos_size, neg_size]
 						dev_results = model(**input_dict)
 						total_count += dev_batch["pos_size"]
-						total_dev_loss += dev_results['loss'].sum().item()
-						# [pos_size, neg_size]
-						dev_correct = (dev_results['pos_energies'].unsqueeze(1) < dev_results['neg_energies']).float()
-						# []
-						dev_exp_correct = (dev_results['neg_probs'] * dev_correct).sum(dim=1).sum(dim=0).item()
-						total_exp_correct += dev_exp_correct
+						total_dev_loss += dev_results['batch_loss'].sum().item()
+						total_exp_correct += dev_results['pos_exp_correct'].item()
 						# first neg example replaces subj
-						dev_subj_uniform_correct = dev_correct[:, 0].sum(dim=0).item()
-						total_subj_uni_correct += dev_subj_uniform_correct
+						total_subj_uni_correct += dev_results['pos_subj_uniform_correct'].item()
 						# second neg example replaces obj
-						dev_obj_uniform_correct = dev_correct[:, 1].sum(dim=0).item()
+						dev_obj_uniform_correct = dev_results['pos_obj_uniform_correct'].item()
 						total_obj_uni_correct += dev_obj_uniform_correct
 
 				dev_subj_uni_acc = total_subj_uni_correct / total_count
@@ -226,9 +225,9 @@ if __name__ == "__main__":
 				dev_loss = total_dev_loss / total_count
 				writer.add_scalar('dev/dev_loss', dev_loss, step)
 				writer.add_scalar('dev/dev_exp_acc', dev_exp_acc, step)
-				writer.add_scalar('dev/dev_uni_acc', dev_uni_acc, step)
-				writer.add_scalar('dev/dev_subj_uni_acc', dev_subj_uni_acc, step)
-				writer.add_scalar('dev/dev_obj_uni_acc', dev_obj_uni_acc, step)
+				writer.add_scalar('dev/dev_uniform_acc', dev_uni_acc, step)
+				writer.add_scalar('dev/dev_subj_uniform_acc', dev_subj_uni_acc, step)
+				writer.add_scalar('dev/dev_obj_uniform_acc', dev_obj_uni_acc, step)
 
 				logging.info(f"DEV:\tLoss={dev_loss:.4f}\tExpected Accuracy={dev_exp_acc:.4f}\tUniform Accuracy={dev_uni_acc:.4f}")
 				logging.info('Saving model...')

@@ -52,13 +52,29 @@ class KnowledgeBaseInfusedBert(BertPreTrainedModel):
 		pos_loss = -nn.LogSigmoid()(self.gamma - pos_energies)
 		neg_loss = -neg_probs * nn.LogSigmoid()(neg_energies - self.gamma)
 		neg_loss = neg_loss.sum(dim=1)
-		loss = (pos_loss + neg_loss).mean()
+		batch_loss = pos_loss + neg_loss
+		loss = batch_loss.mean()
+
+		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
+		# []
+		pos_exp_correct = (neg_probs * pos_correct).sum(dim=1).sum(dim=0)
+		# first neg example replaces subj
+		pos_subj_uniform_correct = pos_correct[:, 0].sum(dim=0)
+		# second neg example replaces obj
+		pos_obj_uniform_correct = pos_correct[:, 1].sum(dim=0)
+		pos_uniform_correct = pos_subj_uniform_correct + pos_obj_uniform_correct
 
 		results = {
 			'loss': loss,
+			'batch_loss': batch_loss,
 			'pos_energies': pos_energies,
 			'neg_energies': neg_energies,
-			'neg_probs': neg_probs
+			'neg_probs': neg_probs,
+			'pos_correct': pos_correct,
+			'pos_exp_correct': pos_exp_correct,
+			'pos_subj_uniform_correct': pos_subj_uniform_correct,
+			'pos_obj_uniform_correct': pos_obj_uniform_correct,
+			'pos_uniform_correct': pos_uniform_correct,
 		}
 
 		return results
