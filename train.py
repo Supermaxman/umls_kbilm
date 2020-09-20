@@ -20,11 +20,11 @@ if __name__ == "__main__":
 	data_folder = 'data'
 	save_directory = 'models'
 	log_directory = 'logs'
-	model_name = 'umls-kbilm-v1'
+	model_name = 'umls-kbilm-v2'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	batch_size = 8
 	weight_decay = 0.01
-	learning_rate = 5e-5
+	learning_rate = 1e-5
 	epochs = 100
 	gamma = 24.0
 	max_seq_len = 64
