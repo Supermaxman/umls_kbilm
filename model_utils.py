@@ -11,7 +11,7 @@ class KnowledgeBaseInfusedBert(BertPreTrainedModel):
 		self.bert = BertModel(config)
 		self.gamma = config.gamma
 
-		self.energy_linear = nn.Linear(config.hidden_size, 1)
+		# self.energy_linear = nn.Linear(config.hidden_size, 1)
 
 		self.init_weights()
 
@@ -38,15 +38,17 @@ class KnowledgeBaseInfusedBert(BertPreTrainedModel):
 			inputs_embeds=inputs_embeds,
 		)
 		contextualized_embeddings = outputs[0]
+		# [total_size, hidden_size]
 		cls_embeddings = contextualized_embeddings[:, 0]
-		energies = self.energy_linear(cls_embeddings)
+		# energies = self.energy_linear(cls_embeddings)
+		# [total_size]
+		energies = torch.norm(cls_embeddings, p=1, dim=1)
 		# [pos_size]
 		pos_energies = energies[:pos_size].view(pos_size)
-		neg_energies = energies[pos_size:total_size]
 		# [pos_size, neg_size]
-		neg_energies = neg_energies.view(pos_size, neg_size)
+		neg_energies = energies[pos_size:total_size].view(pos_size, neg_size)
 		with torch.no_grad():
-			neg_probs = nn.Softmax(dim=1)(self.gamma - neg_energies)
+			neg_probs = nn.Softmax(dim=1)(-neg_energies)
 		pos_loss = -nn.LogSigmoid()(self.gamma - pos_energies)
 		neg_loss = -neg_probs * nn.LogSigmoid()(neg_energies - self.gamma)
 		neg_loss = neg_loss.sum(dim=1)
