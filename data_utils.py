@@ -307,7 +307,7 @@ class UmlsRelationDataModule(pl.LightningDataModule):
 		train_data, val_data, test_data = split_data(self.relations)
 		self.train_dataset = UmlsRelationDataset(train_data)
 		self.val_dataset = UmlsRelationDataset(val_data)
-		self.test_dataset = UmlsRelationDataset(test_data)
+		# self.test_dataset = UmlsRelationDataset(test_data)
 
 	def train_dataloader(self):
 		return DataLoader(
@@ -327,11 +327,11 @@ class UmlsRelationDataModule(pl.LightningDataModule):
 			collate_fn=self.collator
 		)
 
-	def test_dataloader(self):
-		return DataLoader(
-			self.test_dataset,
-			batch_size=self.batch_size,
-			shuffle=False,
-			num_workers=self.num_workers,
-			collate_fn=self.collator
-		)
+	# def test_dataloader(self):
+	# 	return DataLoader(
+	# 		self.test_dataset,
+	# 		batch_size=self.batch_size,
+	# 		shuffle=False,
+	# 		num_workers=self.num_workers,
+	# 		collate_fn=self.collator
+	# 	)

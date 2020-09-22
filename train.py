@@ -17,6 +17,8 @@ if __name__ == "__main__":
 	save_directory = 'models'
 	model_name = 'umls-kbilm-v9'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
+	# tpu_config = 'tpu_worker;0;10.225.43.138:8470'
+	# os.environ['XRT_TPU_CONFIG'] = tpu_config
 	weight_decay = 0.01
 	learning_rate = 1e-5
 	epochs = 100
