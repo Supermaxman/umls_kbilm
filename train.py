@@ -4,6 +4,7 @@ import os
 import logging
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 
 from model_utils import KnowledgeBaseInfusedBert
 from data_utils import RelationCollator, UmlsRelationDataset, load_umls, split_data
@@ -17,7 +18,7 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v36'
+	model_name = 'umls-kbilm-v37'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	learning_rate = 1e-5
 	epochs = 10
@@ -25,21 +26,22 @@ if __name__ == "__main__":
 	gradient_clip_val = 1.0
 	weight_decay = 0.01
 	max_seq_len = 64
-	val_check_interval = 0.20
+	val_check_interval = 0.50
 	is_distributed = True
 	# export TPU_IP_ADDRESS=10.155.6.34
 	# export XRT_TPU_CONFIG="tpu_worker;0;$TPU_IP_ADDRESS:8470"
 	# batch_size = 64
-	batch_size = 8
+	batch_size = 2
 	negative_sample_size = 16
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
 	precision = 32
 	# gpus = [4, 5, 6, 7]
-	gpus = [4]
+	gpus = [4, 5, 6, 7]
 	use_tpus = False
 	tpu_cores = 8
 	num_workers = 1
+	deterministic = True
 
 	pl.seed_everything(seed)
 
@@ -71,13 +73,13 @@ if __name__ == "__main__":
 
 	logging.info('Loading collator...')
 	example_creator = NameRelationExampleCreator()
-	# neg_sampler = UniformNegativeSampler(
-	# 	list(concepts.values()),
-	# 	negative_sample_size
-	# )
-	neg_sampler = BatchNegativeSampler(
+	neg_sampler = UniformNegativeSampler(
+		list(concepts.values()),
 		negative_sample_size
 	)
+	# neg_sampler = BatchNegativeSampler(
+	# 	negative_sample_size
+	# )
 	tokenizer = BertTokenizer.from_pretrained(pre_model_name)
 	# ensure negative_sample_size is correct based on batch_size
 	collator = RelationCollator(
@@ -87,7 +89,6 @@ if __name__ == "__main__":
 		max_seq_len,
 		force_max_seq_len=use_tpus
 	)
-
 	train_dataloader = DataLoader(
 		train_dataset,
 		batch_size=batch_size,
@@ -117,7 +118,8 @@ if __name__ == "__main__":
 			default_root_dir=save_directory,
 			max_epochs=epochs,
 			precision=precision,
-			val_check_interval=val_check_interval
+			val_check_interval=val_check_interval,
+			deterministic=deterministic
 		)
 	else:
 		if len(gpus) > 1:
@@ -132,6 +134,7 @@ if __name__ == "__main__":
 			val_check_interval=val_check_interval,
 			distributed_backend=backend,
 			gradient_clip_val=gradient_clip_val,
+			deterministic=deterministic
 		)
 	trainer.fit(model, train_dataloader, val_dataloader)
 

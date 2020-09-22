@@ -2,9 +2,11 @@ from abc import ABC, abstractmethod
 import random
 from typing import List
 import numpy as np
+import torch.distributed as dist
 
 from umls_reader import read_umls
 from umls import UmlsAtom, UmlsRelation
+
 from kb_utils import RelationType, Concept, Relation, RelationExampleCreator
 
 
@@ -44,8 +46,12 @@ class UniformNegativeSampler(NegativeRelationSampler):
 		super().__init__()
 		self.negative_sample_size = negative_sample_size
 		self.concepts = np.array(concepts)
+		self.rank = dist.get_rank()
+		self.world_size = dist.get_world_size()
+		print(f'UniformNegativeSampler rank={self.rank}, world_size={self.world_size}')
 
 	def sample(self, pos_relation, batch_relations):
+
 		sample_idxs = np.random.randint(len(self.concepts), size=self.negative_sample_size)
 		sample_concepts = self.concepts[sample_idxs]
 		for sample_concept in sample_concepts:
