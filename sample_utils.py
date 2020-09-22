@@ -46,8 +46,12 @@ class UniformNegativeSampler(NegativeRelationSampler):
 		super().__init__()
 		self.negative_sample_size = negative_sample_size
 		self.concepts = np.array(concepts)
-		self.rank = dist.get_rank()
-		self.world_size = dist.get_world_size()
+		try:
+			self.rank = dist.get_rank()
+			self.world_size = dist.get_world_size()
+		except:
+			self.rank = None
+			self.world_size = None
 		print(f'UniformNegativeSampler rank={self.rank}, world_size={self.world_size}')
 
 	def sample(self, pos_relation, batch_relations):
