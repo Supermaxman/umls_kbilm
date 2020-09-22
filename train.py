@@ -39,7 +39,7 @@ if __name__ == "__main__":
 	gpus = [4, 5, 6, 7]
 	use_tpus = True
 	tpu_cores = 1
-	num_workers = 1 if use_tpus else 4
+	num_workers = 0 if use_tpus else 4
 
 	pl.seed_everything(seed)
 
@@ -85,7 +85,8 @@ if __name__ == "__main__":
 		batch_size=batch_size,
 		# shuffle=True,
 		num_workers=num_workers,
-		collate_fn=collator
+		collate_fn=collator,
+		timeout=10
 	)
 
 	# dm = UmlsRelationDataModule(
@@ -109,7 +110,7 @@ if __name__ == "__main__":
 		trainer = pl.Trainer(
 			tpu_cores=tpu_cores,
 			progress_bar_refresh_rate=1,
-			default_root_dir=save_directory,
+			# default_root_dir=save_directory,
 			gradient_clip_val=grad_norm_clip,
 			max_epochs=epochs,
 			precision=precision,

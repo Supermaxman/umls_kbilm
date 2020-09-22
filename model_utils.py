@@ -14,7 +14,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		self.gamma = gamma
 		self.learning_rate = learning_rate
 		self.weight_decay = weight_decay
-		self.save_hyperparameters()
+		# self.save_hyperparameters()
 
 	def forward(self, input_ids, attention_mask):
 		batch_size, sample_size, max_seq_len = input_ids.shape
@@ -67,32 +67,32 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		# pos_uniform_correct = pos_subj_uniform_correct + pos_obj_uniform_correct
 
 		result = pl.TrainResult(loss)
-		result.log('train_loss', loss)
+		# result.log('train_loss', loss)
 		# result.log('train_exp_acc', pos_exp_correct / batch_size)
 		# result.log('train_uniform_acc', pos_uniform_correct / (2 * batch_size))
 		return result
 
-	def validation_step(self, batch, batch_nb):
-		energies = self(**batch)
-		batch_size = energies.shape[0]
-		pos_energies, neg_energies, neg_probs, loss = self._energy_loss(energies)
-
-		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
-		# []
-		pos_exp_correct = (neg_probs * pos_correct).sum(dim=1).sum(dim=0)
-		# first neg example replaces subj
-		pos_subj_uniform_correct = pos_correct[:, 0].sum(dim=0)
-		# second neg example replaces obj
-		pos_obj_uniform_correct = pos_correct[:, 1].sum(dim=0)
-		pos_uniform_correct = pos_subj_uniform_correct + pos_obj_uniform_correct
-		result = pl.EvalResult()
-		result.log('val_loss', loss)
-		result.log('val_exp_acc', pos_exp_correct / batch_size)
-		result.log('val_subj_uniform_acc', pos_subj_uniform_correct / batch_size)
-		result.log('val_obj_uniform_acc', pos_obj_uniform_correct / batch_size)
-		result.log('val_uniform_acc', pos_uniform_correct / (2 * batch_size))
-
-		return result
+	# def validation_step(self, batch, batch_nb):
+	# 	energies = self(**batch)
+	# 	batch_size = energies.shape[0]
+	# 	pos_energies, neg_energies, neg_probs, loss = self._energy_loss(energies)
+	#
+	# 	pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
+	# 	# []
+	# 	pos_exp_correct = (neg_probs * pos_correct).sum(dim=1).sum(dim=0)
+	# 	# first neg example replaces subj
+	# 	pos_subj_uniform_correct = pos_correct[:, 0].sum(dim=0)
+	# 	# second neg example replaces obj
+	# 	pos_obj_uniform_correct = pos_correct[:, 1].sum(dim=0)
+	# 	pos_uniform_correct = pos_subj_uniform_correct + pos_obj_uniform_correct
+	# 	result = pl.EvalResult()
+	# 	result.log('val_loss', loss)
+	# 	result.log('val_exp_acc', pos_exp_correct / batch_size)
+	# 	result.log('val_subj_uniform_acc', pos_subj_uniform_correct / batch_size)
+	# 	result.log('val_obj_uniform_acc', pos_obj_uniform_correct / batch_size)
+	# 	result.log('val_uniform_acc', pos_uniform_correct / (2 * batch_size))
+	#
+	# 	return result
 
 	def configure_optimizers(self):
 		params = self._get_optimizer_params(self.weight_decay)
