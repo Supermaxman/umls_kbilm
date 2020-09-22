@@ -16,7 +16,7 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v14'
+	model_name = 'umls-kbilm-v15'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	weight_decay = 0.01
 	learning_rate = 1e-5
@@ -26,9 +26,8 @@ if __name__ == "__main__":
 	max_seq_len = 64
 	val_check_interval = 0.20
 	is_distributed = True
-	os.environ['XLA_METRICS_FILE']='./metrics.log'
 	# batch_size = 64
-	batch_size = 8
+	batch_size = 16
 	negative_sample_size = 8
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
@@ -80,27 +79,27 @@ if __name__ == "__main__":
 	train_dataset = UmlsRelationDataset(train_data)
 	val_dataset = UmlsRelationDataset(val_data)
 
-	train_dataloader = DataLoader(
-		train_dataset,
-		batch_size=batch_size,
-		shuffle=True,
-		num_workers=num_workers,
-		collate_fn=collator
-	)
-	val_dataloader = DataLoader(
-		val_dataset,
-		batch_size=batch_size,
-		num_workers=num_workers,
-		collate_fn=collator
-	)
-
-	# dm = UmlsRelationDataModule(
-	# 	data_folder=data_folder,
-	# 	umls_directory=umls_directory,
+	# train_dataloader = DataLoader(
+	# 	train_dataset,
+	# 	batch_size=batch_size,
+	# 	shuffle=True,
+	# 	num_workers=num_workers,
+	# 	collate_fn=collator
+	# )
+	# val_dataloader = DataLoader(
+	# 	val_dataset,
 	# 	batch_size=batch_size,
 	# 	num_workers=num_workers,
-	# 	collator=collator
+	# 	collate_fn=collator
 	# )
+
+	dm = UmlsRelationDataModule(
+		data_folder=data_folder,
+		umls_directory=umls_directory,
+		batch_size=batch_size,
+		num_workers=num_workers,
+		collator=collator
+	)
 
 	logging.info('Loading model...')
 	model = KnowledgeBaseInfusedBert(
@@ -114,14 +113,13 @@ if __name__ == "__main__":
 	if use_tpus:
 		trainer = pl.Trainer(
 			tpu_cores=tpu_cores,
-			# progress_bar_refresh_rate=1,
+			progress_bar_refresh_rate=10,
 			default_root_dir=save_directory,
-			# gradient_clip_val=grad_norm_clip,
+			gradient_clip_val=grad_norm_clip,
 			max_epochs=epochs,
 			precision=precision,
-			# val_check_interval=val_check_interval,
-			# num_sanity_val_steps=0,
-			# accumulate_grad_batches=accumulate_grad_batches
+			val_check_interval=val_check_interval,
+			accumulate_grad_batches=accumulate_grad_batches
 		)
 	else:
 		trainer = pl.Trainer(
@@ -135,7 +133,7 @@ if __name__ == "__main__":
 			accumulate_grad_batches=accumulate_grad_batches,
 			amp_backend=amp_backend
 		)
-	trainer.fit(model, train_dataloader, val_dataloader)
+	trainer.fit(model, datamodule=dm)
 
 	# TODO eval on test
 	# logging.info('Evaluating...')
