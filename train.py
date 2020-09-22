@@ -21,7 +21,6 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	log_directory = 'logs'
 	model_name = 'umls-kbilm-v3'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	batch_size = 8
@@ -35,8 +34,9 @@ if __name__ == "__main__":
 	val_check_interval = 0.20
 	is_distributed = True
 	# precision = 32
-	precision = 16
+	precision = 32
 	num_workers = 1
+	gpus = [4, 5, 6, 7]
 
 	random.seed(seed)
 	torch.manual_seed(seed)
@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
 	train_dataset = UmlsRelationDataset(train_data)
 	val_dataset = UmlsRelationDataset(val_data)
-	test_dataset = UmlsRelationDataset(test_data)
+	# test_dataset = UmlsRelationDataset(test_data)
 
 	example_creator = NameRelationExampleCreator()
 
@@ -106,7 +106,7 @@ if __name__ == "__main__":
 	model = KnowledgeBaseInfusedBert(pre_model_name, gamma, learning_rate, weight_decay)
 
 	trainer = pl.Trainer(
-		gpus=[4, 5, 6, 7],
+		gpus=gpus,
 		default_root_dir=save_directory,
 		gradient_clip_val=grad_norm_clip,
 		max_epochs=epochs,
