@@ -37,7 +37,7 @@ if __name__ == "__main__":
 	precision = 32
 	gpus = [4, 5, 6, 7]
 	use_tpus = True
-	tpu_cores = 8
+	tpu_cores = 1
 	num_workers = 1 if use_tpus else 4
 
 	pl.seed_everything(seed)
