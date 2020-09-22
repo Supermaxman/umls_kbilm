@@ -16,7 +16,7 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v17'
+	model_name = 'umls-kbilm-v20'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	weight_decay = 0.01
 	learning_rate = 1e-5
@@ -73,6 +73,7 @@ if __name__ == "__main__":
 	)
 
 	logging.info('Loading dataset...')
+
 	_, _, relations = load_umls(umls_directory, data_folder)
 	train_data, val_data, _ = split_data(relations)
 	train_dataset = UmlsRelationDataset(train_data)
@@ -112,13 +113,14 @@ if __name__ == "__main__":
 	if use_tpus:
 		trainer = pl.Trainer(
 			tpu_cores=tpu_cores,
-			progress_bar_refresh_rate=10,
+			# progress_bar_refresh_rate=1,
 			default_root_dir=save_directory,
-			gradient_clip_val=grad_norm_clip,
+			# gradient_clip_val=grad_norm_clip,
 			max_epochs=epochs,
 			precision=precision,
 			val_check_interval=val_check_interval,
-			accumulate_grad_batches=accumulate_grad_batches
+			# num_sanity_val_steps=0,
+			# accumulate_grad_batches=accumulate_grad_batches
 		)
 	else:
 		trainer = pl.Trainer(
@@ -132,7 +134,6 @@ if __name__ == "__main__":
 			accumulate_grad_batches=accumulate_grad_batches,
 			amp_backend=amp_backend
 		)
-	# trainer.fit(model, datamodule=dm)
 	trainer.fit(model, train_dataloader, val_dataloader)
 
 	# TODO eval on test
