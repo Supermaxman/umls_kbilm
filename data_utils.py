@@ -1,6 +1,4 @@
 import os
-from typing import Any
-
 import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
@@ -13,7 +11,6 @@ import pytorch_lightning as pl
 from umls_reader import read_umls
 from umls import UmlsAtom, UmlsRelation
 from kb_utils import RelationType, Concept, Relation, RelationExampleCreator
-from kb_utils import NameRelationExampleCreator
 
 
 def load_rel_merge_mapping(filepath):

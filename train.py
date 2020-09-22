@@ -2,13 +2,9 @@
 import torch
 import numpy as np
 import random
-from torch.utils.data import DataLoader, DistributedSampler
-from transformers import BertTokenizer, BertConfig, AdamW
-from tqdm import tqdm
+from transformers import BertTokenizer
 import os
-from tensorboardX import SummaryWriter
 import logging
-from transformers import BertModel
 import pytorch_lightning as pl
 
 from model_utils import KnowledgeBaseInfusedBert
