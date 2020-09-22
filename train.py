@@ -28,7 +28,7 @@ if __name__ == "__main__":
 	val_check_interval = 0.20
 	is_distributed = True
 	# batch_size = 64
-	batch_size = 16
+	batch_size = 8
 	negative_sample_size = 8
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
