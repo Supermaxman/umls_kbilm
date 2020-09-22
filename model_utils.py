@@ -61,17 +61,17 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		# # []
 		exp_acc = (neg_probs * pos_correct).sum(dim=1).sum(dim=0) / batch_size
 		uniform_acc = pos_correct.sum(dim=1).sum(dim=0) / neg_size
-		tensorboard_logs = {
-			'train_exp_acc': exp_acc,
-			'train_uniform_acc': uniform_acc
-		}
-		result = {'loss': loss, 'log': tensorboard_logs}
+		# tensorboard_logs = {
+		# 	'train_exp_acc': exp_acc,
+		# 	'train_uniform_acc': uniform_acc
+		# }
+		# result = {'loss': loss, 'log': tensorboard_logs}
 
 		# print(met.metrics_report())
-		# result = pl.TrainResult(loss)
-		# result.log('train_loss', loss)
-		# result.log('train_exp_acc', pos_exp_correct / batch_size)
-		# result.log('train_uniform_acc', pos_uniform_correct / (2 * batch_size))
+		result = pl.TrainResult(loss)
+		result.log('train_loss', loss)
+		result.log('train_exp_acc', exp_acc)
+		result.log('train_uniform_acc', uniform_acc)
 		return result
 
 	def validation_step(self, batch, batch_nb):
@@ -97,25 +97,8 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		return result
 
 	def configure_optimizers(self):
-		# params = self._get_optimizer_params(self.weight_decay)
-		# optimizer = AdamW(
-		# 	params,
-		# 	lr=self.learning_rate,
-		# 	weight_decay=self.weight_decay,
-		# 	correct_bias=False
-		# )
 		optimizer = torch.optim.Adam(
 			self.parameters(),
 			lr=self.learning_rate
 		)
 		return optimizer
-
-	def _get_optimizer_params(self, weight_decay):
-		param_optimizer = list(self.named_parameters())
-		no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-		optimizer_params = [
-			{'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)],
-			 'weight_decay': weight_decay},
-			{'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}]
-
-		return optimizer_params

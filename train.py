@@ -16,7 +16,7 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v20'
+	model_name = 'umls-kbilm-v21'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	learning_rate = 1e-5
 	epochs = 10
@@ -31,7 +31,7 @@ if __name__ == "__main__":
 	# accumulate_grad_batches = 4
 	# amp_backend = 'native'
 	amp_backend = 'native'
-	precision = 32
+	precision = 16
 	gpus = [4, 5, 6, 7]
 	use_tpus = True
 	tpu_cores = 8
@@ -90,14 +90,6 @@ if __name__ == "__main__":
 		num_workers=num_workers,
 		collate_fn=collator
 	)
-
-	# dm = UmlsRelationDataModule(
-	# 	data_folder=data_folder,
-	# 	umls_directory=umls_directory,
-	# 	batch_size=batch_size,
-	# 	num_workers=num_workers,
-	# 	collator=collator
-	# )
 
 	logging.info('Loading model...')
 	model = KnowledgeBaseInfusedBert(
