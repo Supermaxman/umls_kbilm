@@ -69,7 +69,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		# pos_uniform_correct = pos_subj_uniform_correct + pos_obj_uniform_correct
 		result = {'loss': loss}
 
-		print(met.metrics_report())
+		# print(met.metrics_report())
 		# result = pl.TrainResult(loss)
 		# result.log('train_loss', loss)
 		# result.log('train_exp_acc', pos_exp_correct / batch_size)

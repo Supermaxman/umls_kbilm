@@ -28,7 +28,7 @@ if __name__ == "__main__":
 	is_distributed = True
 	os.environ['XLA_METRICS_FILE']='./metrics.log'
 	# batch_size = 64
-	batch_size = 2
+	batch_size = 8
 	negative_sample_size = 8
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 	precision = 32
 	gpus = [4, 5, 6, 7]
 	use_tpus = True
-	tpu_cores = 1
+	tpu_cores = 8
 	num_workers = 1 if use_tpus else 4
 
 	pl.seed_everything(seed)
