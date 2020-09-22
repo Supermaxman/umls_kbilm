@@ -5,9 +5,8 @@ import logging
 import pytorch_lightning as pl
 
 from model_utils import KnowledgeBaseInfusedBert
-from data_utils import RelationCollator, UmlsRelationDataModule, UmlsRelationDataset, load_umls, split_data
+from data_utils import RelationCollator, UmlsRelationDataModule
 from kb_utils import NameRelationExampleCreator
-from torch.utils.data import DataLoader
 
 
 if __name__ == "__main__":
@@ -74,30 +73,12 @@ if __name__ == "__main__":
 	)
 
 	logging.info('Loading dataset...')
-	# dm = UmlsRelationDataModule(
-	# 	data_folder=data_folder,
-	# 	umls_directory=umls_directory,
-	# 	batch_size=batch_size,
-	# 	num_workers=num_workers,
-	# 	collator=collator
-	# )
-	concepts, relation_types, relations = load_umls(umls_directory, data_folder)
-	train_data, val_data, test_data = split_data(relations)
-	train_dataset = UmlsRelationDataset(train_data)
-	val_dataset = UmlsRelationDataset(val_data)
-	train_dataloader = DataLoader(
-		train_dataset,
+	dm = UmlsRelationDataModule(
+		data_folder=data_folder,
+		umls_directory=umls_directory,
 		batch_size=batch_size,
-		shuffle=True,
 		num_workers=num_workers,
-		collate_fn=collator
-	)
-	val_dataloader = DataLoader(
-		val_dataset,
-		batch_size=batch_size,
-		shuffle=False,
-		num_workers=num_workers,
-		collate_fn=collator
+		collator=collator
 	)
 
 	logging.info('Loading model...')
@@ -113,7 +94,6 @@ if __name__ == "__main__":
 		trainer = pl.Trainer(
 			tpu_cores=tpu_cores,
 			progress_bar_refresh_rate=20,
-			num_sanity_val_steps=0,
 			default_root_dir=save_directory,
 			gradient_clip_val=grad_norm_clip,
 			max_epochs=epochs,
@@ -133,7 +113,7 @@ if __name__ == "__main__":
 			accumulate_grad_batches=accumulate_grad_batches,
 			amp_backend=amp_backend
 		)
-	trainer.fit(model, train_dataloader, val_dataloader)
+	trainer.fit(model, datamodule=dm)
 
 	# TODO eval on test
 	# logging.info('Evaluating...')
