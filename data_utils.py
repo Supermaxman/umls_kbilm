@@ -229,10 +229,11 @@ class UmlsRelationDataset(Dataset):
 
 
 class RelationCollator(object):
-	def __init__(self, tokenizer, example_creator: RelationExampleCreator, max_seq_len: int):
+	def __init__(self, tokenizer, example_creator: RelationExampleCreator, max_seq_len: int, negative_sample_size: int):
 		self.tokenizer = tokenizer
 		self.example_creator = example_creator
 		self.max_seq_len = max_seq_len
+		self.negative_sample_size = negative_sample_size
 
 	def __call__(self, relations):
 		# creates text examples
@@ -241,14 +242,18 @@ class RelationCollator(object):
 		for rel in relations:
 			pos_example = self.example_creator.create(rel)
 			examples.append(pos_example)
+			all_negatives = []
 			for other_rel in relations:
 				if other_rel != rel:
 					neg_rel_subj = Relation(subj=other_rel.subj, rel_type=rel.rel_type, obj=rel.obj)
 					neg_rel_subj_example = self.example_creator.create(neg_rel_subj)
 					neg_rel_obj = Relation(subj=rel.subj, rel_type=rel.rel_type, obj=other_rel.obj)
 					neg_rel_obj_example = self.example_creator.create(neg_rel_obj)
-					examples.append(neg_rel_subj_example)
-					examples.append(neg_rel_obj_example)
+					all_negatives.append(neg_rel_subj_example)
+					all_negatives.append(neg_rel_obj_example)
+			random.shuffle(all_negatives)
+			samples = all_negatives[:self.negative_sample_size]
+			examples.extend(samples)
 		# "input_ids": batch["input_ids"].to(device),
 		# "attention_mask": batch["attention_mask"].to(device),
 		tokenizer_batch = self.tokenizer.batch_encode_plus(
@@ -260,8 +265,7 @@ class RelationCollator(object):
 			max_length=self.max_seq_len
 		)
 		batch_size = len(relations)
-		neg_size = 2 * (len(relations) - 1)
-		sample_size = neg_size + 1
+		sample_size = self.negative_sample_size + 1
 		max_seq_len = tokenizer_batch['input_ids'].shape[1]
 		batch = {
 			'input_ids': tokenizer_batch['input_ids'].view(batch_size, sample_size, max_seq_len),

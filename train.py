@@ -24,7 +24,8 @@ if __name__ == "__main__":
 	log_directory = 'logs'
 	model_name = 'umls-kbilm-v2'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	batch_size = 16
+	batch_size = 32
+	negative_sample_size = 16
 	weight_decay = 0.01
 	learning_rate = 1e-5
 	epochs = 100
@@ -73,7 +74,9 @@ if __name__ == "__main__":
 	example_creator = NameRelationExampleCreator()
 
 	tokenizer = BertTokenizer.from_pretrained(pre_model_name)
-	collator = RelationCollator(tokenizer, example_creator, max_seq_len)
+	# ensure negative_sample_size is correct based on batch_size
+	negative_sample_size = min(negative_sample_size, 2 * (batch_size - 1))
+	collator = RelationCollator(tokenizer, example_creator, max_seq_len, negative_sample_size)
 
 	train_dataloader = DataLoader(
 		train_dataset,
