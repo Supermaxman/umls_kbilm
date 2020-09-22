@@ -2,7 +2,7 @@
 import torch
 import numpy as np
 import random
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, DistributedSampler
 from transformers import BertTokenizer, BertConfig, AdamW
 from tqdm import tqdm
 import os
@@ -24,6 +24,7 @@ if __name__ == "__main__":
 	log_directory = 'logs'
 	model_name = 'umls-kbilm-v3'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
+	is_distributed = True
 	batch_size = 8
 	negative_sample_size = 16
 	weight_decay = 0.01
@@ -33,8 +34,8 @@ if __name__ == "__main__":
 	grad_norm_clip = 1.0
 	max_seq_len = 64
 	dev_log_frequency = 10
-	precision = 32
-	# precision = 16
+	# precision = 32
+	precision = 16
 
 	random.seed(seed)
 	torch.manual_seed(seed)
@@ -75,22 +76,25 @@ if __name__ == "__main__":
 
 	tokenizer = BertTokenizer.from_pretrained(pre_model_name)
 	# ensure negative_sample_size is correct based on batch_size
-	negative_sample_size = min(negative_sample_size, 2 * (batch_size - 1))
 	collator = RelationCollator(tokenizer, example_creator, max_seq_len, negative_sample_size)
 
+	train_sampler = DistributedSampler(train_dataset, shuffle=True) if is_distributed else None
 	train_dataloader = DataLoader(
 		train_dataset,
 		batch_size=batch_size,
-		shuffle=True,
+		shuffle=(train_sampler is None),
 		num_workers=1,
-		collate_fn=collator
+		collate_fn=collator,
+		sampler=train_sampler
 	)
+	val_sampler = DistributedSampler(val_dataset, shuffle=False) if is_distributed else None
 	val_dataloader = DataLoader(
 		val_dataset,
 		batch_size=batch_size,
 		shuffle=False,
 		num_workers=1,
-		collate_fn=collator
+		collate_fn=collator,
+		sampler=val_sampler
 	)
 
 	# test_dataloader = DataLoader(
@@ -110,7 +114,7 @@ if __name__ == "__main__":
 		gradient_clip_val=grad_norm_clip,
 		max_epochs=epochs,
 		precision=precision,
-		distributed_backend='ddp'
+		distributed_backend='ddp' if is_distributed else 'dp'
 	)
 	trainer.fit(model, train_dataloader, val_dataloader)
 

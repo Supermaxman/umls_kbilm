@@ -240,7 +240,8 @@ class RelationCollator(object):
 
 	def __call__(self, relations):
 		# creates text examples
-
+		batch_size = len(relations)
+		batch_negative_sample_size = min(self.negative_sample_size, 2 * (batch_size - 1))
 		examples = []
 		for rel in relations:
 			pos_example = self.example_creator.create(rel)
@@ -255,7 +256,7 @@ class RelationCollator(object):
 					all_negatives.append(neg_rel_subj_example)
 					all_negatives.append(neg_rel_obj_example)
 			random.shuffle(all_negatives)
-			samples = all_negatives[:self.negative_sample_size]
+			samples = all_negatives[:batch_negative_sample_size]
 			examples.extend(samples)
 		# "input_ids": batch["input_ids"].to(device),
 		# "attention_mask": batch["attention_mask"].to(device),
@@ -268,7 +269,7 @@ class RelationCollator(object):
 			max_length=self.max_seq_len
 		)
 		batch_size = len(relations)
-		sample_size = self.negative_sample_size + 1
+		sample_size = batch_negative_sample_size + 1
 		max_seq_len = tokenizer_batch['input_ids'].shape[1]
 		batch = {
 			'input_ids': tokenizer_batch['input_ids'].view(batch_size, sample_size, max_seq_len),
