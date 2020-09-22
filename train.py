@@ -18,11 +18,9 @@ if __name__ == "__main__":
 	save_directory = 'models'
 	model_name = 'umls-kbilm-v20'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	weight_decay = 0.01
 	learning_rate = 1e-5
 	epochs = 10
 	gamma = 24.0
-	grad_norm_clip = 1.0
 	max_seq_len = 64
 	val_check_interval = 0.20
 	is_distributed = True
@@ -105,33 +103,26 @@ if __name__ == "__main__":
 	model = KnowledgeBaseInfusedBert(
 		pre_model_name=pre_model_name,
 		gamma=gamma,
-		learning_rate=learning_rate,
-		weight_decay=weight_decay
+		learning_rate=learning_rate
 	)
 
 	logging.info('Training...')
 	if use_tpus:
 		trainer = pl.Trainer(
 			tpu_cores=tpu_cores,
-			# progress_bar_refresh_rate=1,
 			default_root_dir=save_directory,
-			# gradient_clip_val=grad_norm_clip,
 			max_epochs=epochs,
 			precision=precision,
-			val_check_interval=val_check_interval,
-			# num_sanity_val_steps=0,
-			# accumulate_grad_batches=accumulate_grad_batches
+			val_check_interval=val_check_interval
 		)
 	else:
 		trainer = pl.Trainer(
 			gpus=gpus,
 			default_root_dir=save_directory,
-			gradient_clip_val=grad_norm_clip,
 			max_epochs=epochs,
 			precision=precision,
 			distributed_backend='ddp' if is_distributed else 'dp',
 			val_check_interval=val_check_interval,
-			accumulate_grad_batches=accumulate_grad_batches,
 			amp_backend=amp_backend
 		)
 	trainer.fit(model, train_dataloader, val_dataloader)

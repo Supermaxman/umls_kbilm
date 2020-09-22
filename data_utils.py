@@ -233,7 +233,7 @@ class UmlsRelationDataset(Dataset):
 class RelationCollator(object):
 	def __init__(
 			self, tokenizer, example_creator: RelationExampleCreator,
-			max_seq_len: int, negative_sample_size: int, force_max_seq_len: int):
+			max_seq_len: int, negative_sample_size: int, force_max_seq_len: bool):
 		self.tokenizer = tokenizer
 		self.example_creator = example_creator
 		self.max_seq_len = max_seq_len

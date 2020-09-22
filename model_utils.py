@@ -8,14 +8,12 @@ import torch_xla.debug.metrics as met
 
 
 class KnowledgeBaseInfusedBert(pl.LightningModule):
-	def __init__(self, pre_model_name, gamma, learning_rate, weight_decay):
+	def __init__(self, pre_model_name, gamma, learning_rate):
 		super().__init__()
-
 		self.bert = BertModel.from_pretrained(pre_model_name)
 		self.gamma = gamma
 		self.learning_rate = learning_rate
-		self.weight_decay = weight_decay
-		# self.save_hyperparameters()
+		self.save_hyperparameters()
 
 	def forward(self, input_ids, attention_mask):
 		batch_size, sample_size, max_seq_len = input_ids.shape
@@ -50,7 +48,6 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		neg_loss = -neg_probs * nn.LogSigmoid()(neg_energies - self.gamma)
 		neg_loss = neg_loss.sum(dim=1)
 		batch_loss = pos_loss + neg_loss
-		# TODO determine if i should mean here or not
 		loss = batch_loss.mean()
 		return pos_energies, neg_energies, neg_probs, loss
 
@@ -59,15 +56,16 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		batch_size = energies.shape[0]
 		pos_energies, neg_energies, neg_probs, loss = self._energy_loss(energies)
 
-		# pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
+		neg_size = neg_energies.shape[1]
+		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
 		# # []
-		# pos_exp_correct = (neg_probs * pos_correct).sum(dim=1).sum(dim=0)
-		# # first neg example replaces subj
-		# pos_subj_uniform_correct = pos_correct[:, 0].sum(dim=0)
-		# # second neg example replaces obj
-		# pos_obj_uniform_correct = pos_correct[:, 1].sum(dim=0)
-		# pos_uniform_correct = pos_subj_uniform_correct + pos_obj_uniform_correct
-		result = {'loss': loss}
+		exp_acc = (neg_probs * pos_correct).sum(dim=1).sum(dim=0) / batch_size
+		uniform_acc = pos_correct.sum(dim=1).sum(dim=0) / neg_size
+		tensorboard_logs = {
+			'train_exp_acc': exp_acc,
+			'train_uniform_acc': uniform_acc
+		}
+		result = {'loss': loss, 'log': tensorboard_logs}
 
 		# print(met.metrics_report())
 		# result = pl.TrainResult(loss)
@@ -81,21 +79,21 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		batch_size = energies.shape[0]
 		pos_energies, neg_energies, neg_probs, loss = self._energy_loss(energies)
 
-		# pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
+		neg_size = neg_energies.shape[1]
+		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
 		# []
-		# pos_exp_correct = (neg_probs * pos_correct).sum(dim=1).sum(dim=0)
+		exp_acc = (neg_probs * pos_correct).sum(dim=1).sum(dim=0) / batch_size
+		uniform_acc = pos_correct.sum(dim=1).sum(dim=0) / neg_size
 		# first neg example replaces subj
 		# pos_subj_uniform_correct = pos_correct[:, 0].sum(dim=0)
 		# second neg example replaces obj
 		# pos_obj_uniform_correct = pos_correct[:, 1].sum(dim=0)
 		# pos_uniform_correct = pos_subj_uniform_correct + pos_obj_uniform_correct
-		# result = pl.EvalResult()
-		# result.log('val_loss', loss)
-		# result.log('val_exp_acc', pos_exp_correct / batch_size)
-		# result.log('val_subj_uniform_acc', pos_subj_uniform_correct / batch_size)
-		# result.log('val_obj_uniform_acc', pos_obj_uniform_correct / batch_size)
-		# result.log('val_uniform_acc', pos_uniform_correct / (2 * batch_size))
-		result = {'val_loss': loss}
+		result = pl.EvalResult()
+		result.log('val_loss', loss)
+		result.log('val_exp_acc', exp_acc)
+		result.log('val_uniform_acc', uniform_acc)
+		# result = {'val_loss': loss}
 		return result
 
 	def configure_optimizers(self):
@@ -106,7 +104,10 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		# 	weight_decay=self.weight_decay,
 		# 	correct_bias=False
 		# )
-		optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+		optimizer = torch.optim.Adam(
+			self.parameters(),
+			lr=self.learning_rate
+		)
 		return optimizer
 
 	def _get_optimizer_params(self, weight_decay):
