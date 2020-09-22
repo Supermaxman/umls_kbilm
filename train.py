@@ -23,8 +23,6 @@ if __name__ == "__main__":
 	save_directory = 'models'
 	model_name = 'umls-kbilm-v3'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	batch_size = 8
-	negative_sample_size = 16
 	weight_decay = 0.01
 	learning_rate = 1e-5
 	epochs = 100
@@ -32,11 +30,12 @@ if __name__ == "__main__":
 	grad_norm_clip = 1.0
 	max_seq_len = 64
 	val_check_interval = 0.20
-	is_distributed = True
-	# precision = 32
+	is_distributed = False
+	batch_size = 64
+	negative_sample_size = 8
 	precision = 32
-	num_workers = 1
 	gpus = [4, 5, 6, 7]
+	num_workers = 1 if is_distributed else len(gpus)
 
 	random.seed(seed)
 	torch.manual_seed(seed)
