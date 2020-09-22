@@ -7,10 +7,11 @@ import pytorch_lightning as pl
 
 
 class KnowledgeBaseInfusedBert(pl.LightningModule):
-	def __init__(self, pre_model_name, gamma, learning_rate, weight_decay):
+	def __init__(self, pre_model_name, gamma, adv_temp, learning_rate, weight_decay):
 		super().__init__()
 		self.bert = BertModel.from_pretrained(pre_model_name)
 		self.gamma = gamma
+		self.adv_temp = adv_temp
 		self.learning_rate = learning_rate
 		self.weight_decay = weight_decay
 		self.save_hyperparameters()
@@ -43,7 +44,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		# [batch_size, neg_size]
 		neg_energies = energies[:, 1:]
 		with torch.no_grad():
-			neg_probs = nn.Softmax(dim=1)(-neg_energies)
+			neg_probs = nn.Softmax(dim=1)(self.adv_temp * -neg_energies)
 		pos_loss = -nn.LogSigmoid()(self.gamma - pos_energies)
 		neg_loss = -neg_probs * nn.LogSigmoid()(neg_energies - self.gamma)
 		neg_loss = neg_loss.sum(dim=1)

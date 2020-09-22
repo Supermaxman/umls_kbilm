@@ -18,11 +18,14 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v38'
+	model_name = 'umls-kbilm-v39'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	learning_rate = 1e-5
+	learning_rate = 1e-4
 	epochs = 10
-	gamma = 12.0
+	#  {3, 6, 9, 12, 18, 24, 30}
+	gamma = 6.0
+	#  {0.5, 1.0}
+	adv_temp = 0.5
 	gradient_clip_val = 1.0
 	weight_decay = 0.01
 	max_seq_len = 64
@@ -126,19 +129,25 @@ if __name__ == "__main__":
 	model = KnowledgeBaseInfusedBert(
 		pre_model_name=pre_model_name,
 		gamma=gamma,
+		adv_temp=adv_temp,
 		learning_rate=learning_rate,
 		weight_decay=weight_decay
 	)
 
 	logging.info('Training...')
 	if use_tpus:
+		logging.warning('Gradient clipping slows down TPU training drastically, disabled for now.')
 		trainer = pl.Trainer(
 			tpu_cores=tpu_cores,
 			default_root_dir=save_directory,
 			max_epochs=epochs,
 			precision=precision,
 			val_check_interval=val_check_interval,
-			deterministic=deterministic
+			deterministic=deterministic,
+			callbacks=[
+				train_neg_sampler,
+				val_neg_sampler
+			]
 		)
 	else:
 		if len(gpus) > 1:

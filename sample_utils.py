@@ -58,7 +58,7 @@ class UniformNegativeSampler(NegativeRelationSampler):
 		self.test_callback = test_callback
 
 	def sample(self, pos_relation, batch_relations):
-		# TODO need to fix random.random below
+		# TODO need to fix random.random below, not independent for each process (but the concepts are a different set)
 		sample_idxs = np.random.randint(len(self.concepts), size=self.negative_sample_size)
 		sample_concepts = self.concepts[sample_idxs]
 		for sample_concept in sample_concepts:
