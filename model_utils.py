@@ -36,9 +36,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 
 		return energies
 
-	def training_step(self, batch, batch_nb):
-		energies = self(**batch)
-		batch_size = energies.shape[0]
+	def _energy_loss(self, energies):
 		# [batch_size]
 		pos_energies = energies[:, 0]
 		# [batch_size, neg_size]
@@ -51,6 +49,12 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		batch_loss = pos_loss + neg_loss
 		# TODO determine if i should mean here or not
 		loss = batch_loss.mean()
+		return pos_energies, neg_energies, neg_probs, loss
+
+	def training_step(self, batch, batch_nb):
+		energies = self(**batch)
+		batch_size = energies.shape[0]
+		pos_energies, neg_energies, neg_probs, loss = self._energy_loss(energies)
 
 		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
 		# []
@@ -70,18 +74,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 	def validation_step(self, batch, batch_nb):
 		energies = self(**batch)
 		batch_size = energies.shape[0]
-		# [batch_size]
-		pos_energies = energies[:, 0]
-		# [batch_size, neg_size]
-		neg_energies = energies[:, 1:]
-		with torch.no_grad():
-			neg_probs = nn.Softmax(dim=1)(-neg_energies)
-		pos_loss = -nn.LogSigmoid()(self.gamma - pos_energies)
-		neg_loss = -neg_probs * nn.LogSigmoid()(neg_energies - self.gamma)
-		neg_loss = neg_loss.sum(dim=1)
-		batch_loss = pos_loss + neg_loss
-		# TODO determine if i should mean here or not
-		loss = batch_loss.mean()
+		pos_energies, neg_energies, neg_probs, loss = self._energy_loss(energies)
 
 		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
 		# []
@@ -101,7 +94,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		return result
 
 	def configure_optimizers(self):
-		params = self.get_optimizer_params(self.weight_decay)
+		params = self._get_optimizer_params(self.weight_decay)
 		optimizer = AdamW(
 			params,
 			lr=self.learning_rate,
@@ -110,7 +103,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		)
 		return optimizer
 
-	def get_optimizer_params(self, weight_decay):
+	def _get_optimizer_params(self, weight_decay):
 		param_optimizer = list(self.named_parameters())
 		no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
 		optimizer_params = [

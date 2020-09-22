@@ -12,11 +12,12 @@ from transformers import BertModel
 import pytorch_lightning as pl
 
 from model_utils import KnowledgeBaseInfusedBert
-from data_utils import RelationCollator, UmlsRelationDataset, load_umls, split_data, get_optimizer_params
+from data_utils import RelationCollator, UmlsRelationDataModule
 from kb_utils import NameRelationExampleCreator
 
 
 if __name__ == "__main__":
+	# TODO parameterize below into config file for reproducibility
 	seed = 0
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
@@ -65,50 +66,35 @@ if __name__ == "__main__":
 			logging.StreamHandler()]
 	)
 
-	logging.info('Loading umls dataset')
-	concepts, relation_types, relations = load_umls(umls_directory, data_folder)
-
-	train_data, val_data, test_data = split_data(relations)
-	logging.info(f'Train data size: {len(train_data)}')
-	logging.info(f'Val data size: {len(val_data)}')
-	logging.info(f'Test data size: {len(test_data)}')
-
-	train_dataset = UmlsRelationDataset(train_data)
-	val_dataset = UmlsRelationDataset(val_data)
-	# test_dataset = UmlsRelationDataset(test_data)
-
+	logging.info('Loading collator...')
 	example_creator = NameRelationExampleCreator()
-
 	tokenizer = BertTokenizer.from_pretrained(pre_model_name)
 	# ensure negative_sample_size is correct based on batch_size
-	collator = RelationCollator(tokenizer, example_creator, max_seq_len, negative_sample_size)
-
-	train_dataloader = DataLoader(
-		train_dataset,
-		batch_size=batch_size,
-		shuffle=True,
-		num_workers=num_workers,
-		collate_fn=collator
-	)
-	val_dataloader = DataLoader(
-		val_dataset,
-		batch_size=batch_size,
-		shuffle=False,
-		num_workers=num_workers,
-		collate_fn=collator
+	collator = RelationCollator(
+		tokenizer,
+		example_creator,
+		max_seq_len,
+		negative_sample_size
 	)
 
-	# test_dataloader = DataLoader(
-	# 	test_dataset,
-	# 	batch_size=batch_size,
-	# 	shuffle=False,
-	# 	num_workers=1,
-	# 	collate_fn=collator
-	# )
+	logging.info('Loading dataset...')
+	dm = UmlsRelationDataModule(
+		data_folder=data_folder,
+		umls_directory=umls_directory,
+		batch_size=batch_size,
+		num_workers=num_workers,
+		collator=collator
+	)
 
-	logging.info('Loading model')
-	model = KnowledgeBaseInfusedBert(pre_model_name, gamma, learning_rate, weight_decay)
+	logging.info('Loading model...')
+	model = KnowledgeBaseInfusedBert(
+		pre_model_name=pre_model_name,
+		gamma=gamma,
+		learning_rate=learning_rate,
+		weight_decay=weight_decay
+	)
 
+	logging.info('Training...')
 	trainer = pl.Trainer(
 		gpus=gpus,
 		default_root_dir=save_directory,
@@ -120,7 +106,9 @@ if __name__ == "__main__":
 		accumulate_grad_batches=accumulate_grad_batches,
 		amp_backend=amp_backend
 	)
-	trainer.fit(model, train_dataloader, val_dataloader)
+	trainer.fit(model, datamodule=dm)
 
-
+	# TODO eval on test
+	# logging.info('Evaluating...')
+	# trainer.test(datamodule=dm)
 
