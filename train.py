@@ -33,11 +33,11 @@ if __name__ == "__main__":
 	# accumulate_grad_batches = 4
 	# amp_backend = 'native'
 	amp_backend = 'native'
+	precision = 16
 	gpus = [4, 5, 6, 7]
 	use_tpus = True
 	tpu_cores = 8
-	num_workers = 1 if use_tpus else 4
-	precision = 16 if use_tpus else 32
+	num_workers = 1
 
 	pl.seed_everything(seed)
 
