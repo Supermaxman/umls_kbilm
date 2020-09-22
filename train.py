@@ -24,7 +24,7 @@ if __name__ == "__main__":
 	log_directory = 'logs'
 	model_name = 'umls-kbilm-v2'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	batch_size = 32
+	batch_size = 16
 	negative_sample_size = 8
 	weight_decay = 0.01
 	learning_rate = 1e-5
@@ -34,7 +34,6 @@ if __name__ == "__main__":
 	max_seq_len = 64
 	dev_log_frequency = 10
 	precision = 16
-	gpus = [4, 5, 6, 7]
 	# precision = 16
 
 	random.seed(seed)
@@ -106,7 +105,7 @@ if __name__ == "__main__":
 	model = KnowledgeBaseInfusedBert(pre_model_name, gamma, learning_rate, weight_decay)
 
 	trainer = pl.Trainer(
-		gpus=gpus,
+		gpus=[4, 5, 6, 7],
 		default_root_dir=save_directory,
 		gradient_clip_val=grad_norm_clip,
 		max_epochs=epochs,
