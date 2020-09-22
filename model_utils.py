@@ -4,7 +4,6 @@ from transformers import AdamW
 from torch import nn
 import torch
 import pytorch_lightning as pl
-import torch_xla.debug.metrics as met
 
 
 class KnowledgeBaseInfusedBert(pl.LightningModule):
