@@ -3,9 +3,10 @@ from transformers import BertTokenizer
 import os
 import logging
 import pytorch_lightning as pl
+from torch.utils.data import DataLoader
 
 from model_utils import KnowledgeBaseInfusedBert
-from data_utils import RelationCollator, UmlsRelationDataModule
+from data_utils import RelationCollator, UmlsRelationDataModule, UmlsRelationDataset, load_umls, split_data
 from kb_utils import NameRelationExampleCreator
 
 
@@ -73,13 +74,27 @@ if __name__ == "__main__":
 	)
 
 	logging.info('Loading dataset...')
-	dm = UmlsRelationDataModule(
-		data_folder=data_folder,
-		umls_directory=umls_directory,
+
+	_, _, relations = load_umls(umls_directory, data_folder)
+	train_data, _, _ = split_data(relations)
+	train_dataset = UmlsRelationDataset(train_data)
+	# val_dataset = UmlsRelationDataset(val_data)
+
+	train_dataloader = DataLoader(
+		train_dataset,
 		batch_size=batch_size,
+		# shuffle=True,
 		num_workers=num_workers,
-		collator=collator
+		collate_fn=collator
 	)
+
+	# dm = UmlsRelationDataModule(
+	# 	data_folder=data_folder,
+	# 	umls_directory=umls_directory,
+	# 	batch_size=batch_size,
+	# 	num_workers=num_workers,
+	# 	collator=collator
+	# )
 
 	logging.info('Loading model...')
 	model = KnowledgeBaseInfusedBert(
@@ -113,7 +128,7 @@ if __name__ == "__main__":
 			accumulate_grad_batches=accumulate_grad_batches,
 			amp_backend=amp_backend
 		)
-	trainer.fit(model, datamodule=dm)
+	trainer.fit(model, train_dataloader)
 
 	# TODO eval on test
 	# logging.info('Evaluating...')
