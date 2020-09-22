@@ -113,8 +113,8 @@ if __name__ == "__main__":
 			default_root_dir=save_directory,
 			max_epochs=epochs,
 			precision=precision,
-			distributed_backend='ddp' if is_distributed else 'dp',
 			val_check_interval=val_check_interval,
+			distributed_backend='ddp' if is_distributed else 'dp',
 			amp_backend=amp_backend
 		)
 	trainer.fit(model, train_dataloader, val_dataloader)
