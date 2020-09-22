@@ -106,7 +106,8 @@ if __name__ == "__main__":
 	model = KnowledgeBaseInfusedBert(
 		pre_model_name=pre_model_name,
 		gamma=gamma,
-		learning_rate=learning_rate
+		learning_rate=learning_rate,
+		weight_decay=weight_decay
 	)
 
 	logging.info('Training...')
