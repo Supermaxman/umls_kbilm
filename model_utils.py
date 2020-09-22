@@ -47,9 +47,9 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		pos_loss = -nn.LogSigmoid()(self.gamma - pos_energies)
 		neg_loss = -neg_probs * nn.LogSigmoid()(neg_energies - self.gamma)
 		neg_loss = neg_loss.sum(dim=1)
-		loss = pos_loss + neg_loss
+		batch_loss = pos_loss + neg_loss
 		# TODO determine if i should mean here or not
-		# loss = batch_loss.mean()
+		loss = batch_loss.mean()
 		return pos_energies, neg_energies, neg_probs, loss
 
 	def training_step(self, batch, batch_nb):
