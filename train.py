@@ -111,7 +111,7 @@ if __name__ == "__main__":
 		gradient_clip_val=grad_norm_clip,
 		max_epochs=epochs,
 		precision=precision,
-		distributed_backend='dp'
+		distributed_backend='ddp'
 	)
 	trainer.fit(model, train_dataloader, val_dataloader)
 
