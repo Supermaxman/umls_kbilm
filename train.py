@@ -33,7 +33,7 @@ if __name__ == "__main__":
 	grad_norm_clip = 1.0
 	max_seq_len = 64
 	dev_log_frequency = 10
-	precision = 16
+	precision = 32
 	# precision = 16
 
 	random.seed(seed)
