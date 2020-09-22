@@ -3,8 +3,10 @@ import torch
 import numpy as np
 import random
 from torch.utils.data import DataLoader
-from transformers import BertTokenizer
+from transformers import BertTokenizer, BertConfig, AdamW
+from tqdm import tqdm
 import os
+from tensorboardX import SummaryWriter
 import logging
 from transformers import BertModel
 import pytorch_lightning as pl
@@ -40,12 +42,19 @@ if __name__ == "__main__":
 	if not os.path.exists(save_directory):
 		os.mkdir(save_directory)
 
-	if torch.cuda.is_available():
-		device = torch.device("cuda")
-		logging.info(f"Using GPU{torch.cuda.get_device_name(0)}")
-	else:
-		device = torch.device("cpu")
-		logging.info(f"Using CPU")
+	# Also add the stream handler so that it logs on STD out as well
+	# Ref: https://stackoverflow.com/a/46098711/4535284
+	for handler in logging.root.handlers[:]:
+		logging.root.removeHandler(handler)
+
+	logfile = os.path.join(save_directory, "train_output.log")
+	logging.basicConfig(
+		level=logging.INFO,
+		format="%(asctime)s [%(levelname)s] %(message)s",
+		handlers=[
+			logging.FileHandler(logfile, mode='w'),
+			logging.StreamHandler()]
+	)
 
 	logging.info('Loading umls dataset')
 	concepts, relation_types, relations = load_umls(umls_directory, data_folder)
