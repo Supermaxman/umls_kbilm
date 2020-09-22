@@ -61,12 +61,11 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		pos_obj_uniform_correct = pos_correct[:, 1].sum(dim=0)
 		pos_uniform_correct = pos_subj_uniform_correct + pos_obj_uniform_correct
 
-		tensorboard_logs = {
-			'train_loss': loss,
-			'train_exp_acc': pos_exp_correct / batch_size,
-			'train_uniform_acc': pos_uniform_correct / (2 * batch_size),
-		}
-		return {'loss': loss, 'log': tensorboard_logs}
+		result = pl.TrainResult(loss)
+		result.log('train_loss', loss)
+		result.log('train_exp_acc', pos_exp_correct / batch_size)
+		result.log('train_uniform_acc', pos_uniform_correct / (2 * batch_size))
+		return result
 
 	def validation_step(self, batch, batch_nb):
 		energies = self(**batch)
@@ -92,15 +91,14 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		# second neg example replaces obj
 		pos_obj_uniform_correct = pos_correct[:, 1].sum(dim=0)
 		pos_uniform_correct = pos_subj_uniform_correct + pos_obj_uniform_correct
+		result = pl.EvalResult()
+		result.log('val_loss', loss)
+		result.log('val_exp_acc', pos_exp_correct / batch_size)
+		result.log('val_subj_uniform_acc', pos_subj_uniform_correct / batch_size)
+		result.log('val_obj_uniform_acc', pos_obj_uniform_correct / batch_size)
+		result.log('val_uniform_acc', pos_uniform_correct / (2 * batch_size))
 
-		tensorboard_logs = {
-			'val_loss': loss,
-			'val_exp_acc': pos_exp_correct / batch_size,
-			'val_subj_uniform_acc': pos_subj_uniform_correct / batch_size,
-			'val_obj_uniform_acc': pos_obj_uniform_correct / batch_size,
-			'val_uniform_acc': pos_uniform_correct / (2 * batch_size),
-		}
-		return {'loss': loss, 'log': tensorboard_logs}
+		return result
 
 	def configure_optimizers(self):
 		params = self.get_optimizer_params(self.weight_decay)
