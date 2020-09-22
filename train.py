@@ -4,7 +4,6 @@ import os
 import logging
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
-from transformers import BertModel
 
 from model_utils import KnowledgeBaseInfusedBert
 from data_utils import RelationCollator, UmlsRelationDataModule, UmlsRelationDataset, load_umls, split_data
@@ -35,7 +34,7 @@ if __name__ == "__main__":
 	val_check_interval = 0.20
 	is_distributed = True
 	# batch_size = 64
-	batch_size = 8
+	batch_size = 4
 	negative_sample_size = 8
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
@@ -45,7 +44,7 @@ if __name__ == "__main__":
 	gpus = [4, 5, 6, 7]
 	use_tpus = True
 	tpu_cores = 1
-	num_workers = 1 if use_tpus else 4
+	num_workers = 4 if use_tpus else 4
 
 	pl.seed_everything(seed)
 
@@ -103,10 +102,8 @@ if __name__ == "__main__":
 	# )
 
 	logging.info('Loading model...')
-
-	bert = BertModel.from_pretrained(pre_model_name)
 	model = KnowledgeBaseInfusedBert(
-		bert=bert,
+		pre_model_name=pre_model_name,
 		gamma=gamma,
 		learning_rate=learning_rate,
 		weight_decay=weight_decay

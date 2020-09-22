@@ -7,13 +7,14 @@ import pytorch_lightning as pl
 
 
 class KnowledgeBaseInfusedBert(pl.LightningModule):
-	def __init__(self, bert, gamma, learning_rate, weight_decay):
+	def __init__(self, pre_model_name, gamma, learning_rate, weight_decay):
 		super().__init__()
-		self.bert = bert
+
+		self.bert = BertModel.from_pretrained(pre_model_name)
 		self.gamma = gamma
 		self.learning_rate = learning_rate
 		self.weight_decay = weight_decay
-		# self.save_hyperparameters('gamma', 'learning_rate', 'weight_decay')
+		# self.save_hyperparameters()
 
 	def forward(self, input_ids, attention_mask):
 		batch_size, sample_size, max_seq_len = input_ids.shape
@@ -101,7 +102,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		# 	weight_decay=self.weight_decay,
 		# 	correct_bias=False
 		# )
-		optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+		optimizer = torch.optim.Adam(self.parameters(), lr=0.001)
 		return optimizer
 
 	def _get_optimizer_params(self, weight_decay):
