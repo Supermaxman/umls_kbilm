@@ -31,7 +31,7 @@ if __name__ == "__main__":
 	# export TPU_IP_ADDRESS=10.155.6.34
 	# export XRT_TPU_CONFIG="tpu_worker;0;$TPU_IP_ADDRESS:8470"
 	# batch_size = 64
-	batch_size = 2
+	batch_size = 4
 	negative_sample_size = 16
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
@@ -67,25 +67,36 @@ if __name__ == "__main__":
 	logging.info('Loading dataset...')
 
 	concepts, relation_types, relations = load_umls(umls_directory, data_folder)
+	concept_list = list(concepts.values())
 	train_data, val_data, _ = split_data(relations)
 	train_dataset = UmlsRelationDataset(train_data)
 	val_dataset = UmlsRelationDataset(val_data)
 
 	logging.info('Loading collator...')
 	example_creator = NameRelationExampleCreator()
-	neg_sampler = UniformNegativeSampler(
-		list(concepts.values()),
-		negative_sample_size
+	train_neg_sampler = UniformNegativeSampler(
+		concept_list,
+		negative_sample_size,
+		shuffle=True,
+		seed=seed,
+		train_callback=True
+	)
+	val_neg_sampler = UniformNegativeSampler(
+		concept_list,
+		negative_sample_size,
+		shuffle=False,
+		seed=seed,
+		val_callback=True
 	)
 	# neg_sampler = BatchNegativeSampler(
 	# 	negative_sample_size
 	# )
 	tokenizer = BertTokenizer.from_pretrained(pre_model_name)
 	# ensure negative_sample_size is correct based on batch_size
-	collator = RelationCollator(
+	train_collator = RelationCollator(
 		tokenizer,
 		example_creator,
-		neg_sampler,
+		train_neg_sampler,
 		max_seq_len,
 		force_max_seq_len=use_tpus
 	)
@@ -94,13 +105,21 @@ if __name__ == "__main__":
 		batch_size=batch_size,
 		shuffle=True,
 		num_workers=num_workers,
-		collate_fn=collator
+		collate_fn=train_collator
+	)
+
+	val_collator = RelationCollator(
+		tokenizer,
+		example_creator,
+		val_neg_sampler,
+		max_seq_len,
+		force_max_seq_len=use_tpus
 	)
 	val_dataloader = DataLoader(
 		val_dataset,
 		batch_size=batch_size,
 		num_workers=num_workers,
-		collate_fn=collator
+		collate_fn=val_collator
 	)
 
 	logging.info('Loading model...')
@@ -134,7 +153,11 @@ if __name__ == "__main__":
 			val_check_interval=val_check_interval,
 			distributed_backend=backend,
 			gradient_clip_val=gradient_clip_val,
-			deterministic=deterministic
+			deterministic=deterministic,
+			callbacks=[
+				train_neg_sampler,
+				val_neg_sampler
+			]
 		)
 	trainer.fit(model, train_dataloader, val_dataloader)
 

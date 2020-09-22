@@ -7,6 +7,7 @@ import random
 import logging
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
+import torch.distributed as dist
 
 from umls_reader import read_umls
 from umls import UmlsAtom, UmlsRelation
@@ -235,6 +236,7 @@ class RelationCollator(object):
 	def __init__(
 			self, tokenizer, example_creator: RelationExampleCreator, neg_sampler: NegativeRelationSampler,
 			max_seq_len: int, force_max_seq_len: bool):
+		super().__init__()
 		self.tokenizer = tokenizer
 		self.example_creator = example_creator
 		self.neg_sampler = neg_sampler
@@ -275,4 +277,3 @@ class RelationCollator(object):
 		}
 
 		return batch
-

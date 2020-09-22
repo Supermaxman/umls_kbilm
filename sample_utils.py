@@ -3,6 +3,9 @@ import random
 from typing import List
 import numpy as np
 import torch.distributed as dist
+import math
+import torch
+import pytorch_lightning as pl
 
 from umls_reader import read_umls
 from umls import UmlsAtom, UmlsRelation
@@ -10,7 +13,7 @@ from umls import UmlsAtom, UmlsRelation
 from kb_utils import RelationType, Concept, Relation, RelationExampleCreator
 
 
-class NegativeRelationSampler(ABC):
+class NegativeRelationSampler(pl.Callback):
 	def __init__(self):
 		pass
 
@@ -42,23 +45,20 @@ class BatchNegativeSampler(NegativeRelationSampler):
 
 
 class UniformNegativeSampler(NegativeRelationSampler):
-	def __init__(self, concepts: List[Concept], negative_sample_size: int):
+	def __init__(self, concepts: List[Concept], negative_sample_size: int, shuffle: bool = False, seed=0,
+							 train_callback=False, val_callback=False, test_callback=False):
 		super().__init__()
 		self.negative_sample_size = negative_sample_size
 		self.concepts = np.array(concepts)
-		self.initialized = False
+		self.shuffle = shuffle
+		self.seed = seed
+		self.epoch = 0
+		self.train_callback = train_callback
+		self.val_callback = val_callback
+		self.test_callback = test_callback
 
 	def sample(self, pos_relation, batch_relations):
-		if not self.initialized:
-			try:
-				self.rank = dist.get_rank()
-				self.world_size = dist.get_world_size()
-			except:
-				self.rank = None
-				self.world_size = None
-			print(f'UniformNegativeSampler rank={self.rank}, world_size={self.world_size}')
-			self.initialized = True
-
+		# TODO need to fix random.random below
 		sample_idxs = np.random.randint(len(self.concepts), size=self.negative_sample_size)
 		sample_concepts = self.concepts[sample_idxs]
 		for sample_concept in sample_concepts:
@@ -68,3 +68,29 @@ class UniformNegativeSampler(NegativeRelationSampler):
 				neg_rel = Relation(subj=pos_relation.subj, rel_type=pos_relation.rel_type, obj=sample_concept)
 			yield neg_rel
 
+	def update_epoch(self, epoch):
+		self.epoch = epoch
+		try:
+			rank = dist.get_rank()
+			num_replicas = dist.get_world_size()
+			# subsample concepts for rank specific negative sampling
+			self.concepts = self.concepts[rank::num_replicas]
+			if self.shuffle:
+				g = torch.Generator()
+				g.manual_seed(hash((self.seed, self.epoch, rank)))
+				indices = torch.randperm(len(self.concepts), generator=g).tolist()
+				self.concepts = self.concepts[indices]
+		except RuntimeError as e:
+			print(e)
+
+	def on_train_epoch_start(self, trainer: pl.Trainer, pl_module):
+		if self.train_callback:
+			self.update_epoch(trainer.current_epoch)
+
+	def on_validation_epoch_start(self, trainer, pl_module):
+		if self.val_callback:
+			self.update_epoch(epoch=0)
+
+	def on_test_epoch_start(self, trainer, pl_module):
+		if self.test_callback:
+			self.update_epoch(epoch=0)
