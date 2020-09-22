@@ -24,7 +24,7 @@ if __name__ == "__main__":
 	log_directory = 'logs'
 	model_name = 'umls-kbilm-v2'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	batch_size = 16
+	batch_size = 32
 	negative_sample_size = 8
 	weight_decay = 0.01
 	learning_rate = 1e-5
@@ -82,14 +82,14 @@ if __name__ == "__main__":
 		train_dataset,
 		batch_size=batch_size,
 		shuffle=True,
-		num_workers=1,
+		num_workers=4,
 		collate_fn=collator
 	)
 	val_dataloader = DataLoader(
 		val_dataset,
 		batch_size=batch_size,
 		shuffle=False,
-		num_workers=1,
+		num_workers=4,
 		collate_fn=collator
 	)
 
@@ -102,8 +102,7 @@ if __name__ == "__main__":
 	# )
 
 	logging.info('Loading model')
-	bert = BertModel.from_pretrained(pre_model_name)
-	model = KnowledgeBaseInfusedBert(bert, gamma, learning_rate, weight_decay)
+	model = KnowledgeBaseInfusedBert(pre_model_name, gamma, learning_rate, weight_decay)
 
 	trainer = pl.Trainer(
 		gpus=[4, 5, 6, 7],

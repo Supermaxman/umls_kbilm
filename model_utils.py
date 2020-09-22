@@ -7,10 +7,10 @@ import pytorch_lightning as pl
 
 
 class KnowledgeBaseInfusedBert(pl.LightningModule):
-	def __init__(self, bert, gamma, learning_rate, weight_decay):
+	def __init__(self, pre_model_name, gamma, learning_rate, weight_decay):
 		super().__init__()
 
-		self.bert = bert
+		self.bert = BertModel.from_pretrained(pre_model_name)
 		self.gamma = gamma
 		self.learning_rate = learning_rate
 		self.weight_decay = weight_decay
