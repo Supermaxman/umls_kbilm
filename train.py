@@ -19,7 +19,7 @@ if __name__ == "__main__":
 	save_directory = 'models'
 	model_name = 'umls-kbilm-v24'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	learning_rate = 1e-5
+	learning_rate = 1e-4
 	epochs = 10
 	gamma = 24.0
 	max_seq_len = 64
@@ -28,7 +28,7 @@ if __name__ == "__main__":
 	# export TPU_IP_ADDRESS=10.155.6.34
 	# export XRT_TPU_CONFIG="tpu_worker;0;$TPU_IP_ADDRESS:8470"
 	# batch_size = 64
-	batch_size = 2
+	batch_size = 8
 	negative_sample_size = 32
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
