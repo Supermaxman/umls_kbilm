@@ -125,7 +125,7 @@ if __name__ == "__main__":
 			max_epochs=epochs,
 			precision=precision,
 			val_check_interval=val_check_interval,
-			num_sanity_val_steps=1,
+			num_sanity_val_steps=0,
 			accumulate_grad_batches=accumulate_grad_batches
 		)
 	else:
