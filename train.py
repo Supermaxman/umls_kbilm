@@ -33,7 +33,8 @@ if __name__ == "__main__":
 	grad_norm_clip = 1.0
 	max_seq_len = 64
 	dev_log_frequency = 10
-	precision = 32
+	precision = 16
+	gpus = [4, 5, 6, 7]
 	# precision = 16
 
 	random.seed(seed)
@@ -105,7 +106,7 @@ if __name__ == "__main__":
 	model = KnowledgeBaseInfusedBert(pre_model_name, gamma, learning_rate, weight_decay)
 
 	trainer = pl.Trainer(
-		gpus=[4, 5, 6, 7],
+		gpus=gpus,
 		default_root_dir=save_directory,
 		gradient_clip_val=grad_norm_clip,
 		max_epochs=epochs,
