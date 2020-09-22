@@ -20,6 +20,8 @@ if __name__ == "__main__":
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	# tpu_config = 'tpu_worker;0;10.225.43.138:8470'
 	# os.environ['XRT_TPU_CONFIG'] = tpu_config
+	os.environ['XLA_USE_BF16'] = "1"
+	os.environ['XLA_TENSOR_ALLOCATOR_MAXSIZE'] = '100000000'
 	weight_decay = 0.01
 	learning_rate = 1e-5
 	epochs = 10
