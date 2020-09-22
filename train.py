@@ -81,14 +81,20 @@ if __name__ == "__main__":
 	logging.info('Loading dataset...')
 
 	_, _, relations = load_umls(umls_directory, data_folder)
-	train_data, _, _ = split_data(relations)
+	train_data, val_data, _ = split_data(relations)
 	train_dataset = UmlsRelationDataset(train_data)
-	# val_dataset = UmlsRelationDataset(val_data)
+	val_dataset = UmlsRelationDataset(val_data)
 
 	train_dataloader = DataLoader(
 		train_dataset,
 		batch_size=batch_size,
-		# shuffle=True,
+		shuffle=True,
+		num_workers=num_workers,
+		collate_fn=collator
+	)
+	val_dataloader = DataLoader(
+		train_dataset,
+		batch_size=batch_size,
 		num_workers=num_workers,
 		collate_fn=collator
 	)
@@ -119,7 +125,7 @@ if __name__ == "__main__":
 			max_epochs=epochs,
 			precision=precision,
 			val_check_interval=val_check_interval,
-			num_sanity_val_steps=0,
+			num_sanity_val_steps=1,
 			accumulate_grad_batches=accumulate_grad_batches
 		)
 	else:
@@ -134,7 +140,7 @@ if __name__ == "__main__":
 			accumulate_grad_batches=accumulate_grad_batches,
 			amp_backend=amp_backend
 		)
-	trainer.fit(model, train_dataloader)
+	trainer.fit(model, train_dataloader, val_dataloader)
 
 	# TODO eval on test
 	# logging.info('Evaluating...')
