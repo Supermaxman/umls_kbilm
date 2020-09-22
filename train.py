@@ -17,7 +17,7 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v24'
+	model_name = 'umls-kbilm-v25'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	learning_rate = 1e-4
 	epochs = 10
