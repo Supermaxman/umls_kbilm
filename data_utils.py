@@ -245,11 +245,11 @@ class RelationCollator(object):
 		# creates text examples
 		batch_negative_sample_size = None
 		examples = []
-		for rel in relations:
-			pos_example = self.example_creator.create(rel)
+		for pos_rel in relations:
+			pos_example = self.example_creator.create(pos_rel)
 			examples.append(pos_example)
 			num_samples = 0
-			for neg_rel in self.neg_sampler.sample(pos_example, relations):
+			for neg_rel in self.neg_sampler.sample(pos_rel, relations):
 				neg_example = self.example_creator.create(neg_rel)
 				examples.append(neg_example)
 				num_samples += 1

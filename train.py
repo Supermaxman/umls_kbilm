@@ -32,8 +32,6 @@ if __name__ == "__main__":
 	negative_sample_size = 32
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
-	# amp_backend = 'native'
-	amp_backend = 'native'
 	precision = 32
 	gpus = [4, 5, 6, 7]
 	use_tpus = False
@@ -121,8 +119,7 @@ if __name__ == "__main__":
 			max_epochs=epochs,
 			precision=precision,
 			val_check_interval=val_check_interval,
-			distributed_backend='ddp' if is_distributed else 'dp',
-			amp_backend=amp_backend
+			distributed_backend='ddp' if is_distributed else 'dp'
 		)
 	trainer.fit(model, train_dataloader, val_dataloader)
 
