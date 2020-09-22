@@ -16,7 +16,7 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v13'
+	model_name = 'umls-kbilm-v14'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	weight_decay = 0.01
 	learning_rate = 1e-5
@@ -26,6 +26,7 @@ if __name__ == "__main__":
 	max_seq_len = 64
 	val_check_interval = 0.20
 	is_distributed = True
+	os.environ['XLA_METRICS_FILE']='./metrics.log'
 	# batch_size = 64
 	batch_size = 2
 	negative_sample_size = 8
@@ -68,7 +69,8 @@ if __name__ == "__main__":
 		tokenizer,
 		example_creator,
 		max_seq_len,
-		negative_sample_size
+		negative_sample_size,
+		force_max_seq_len=use_tpus
 	)
 
 	logging.info('Loading dataset...')
@@ -116,7 +118,7 @@ if __name__ == "__main__":
 			default_root_dir=save_directory,
 			# gradient_clip_val=grad_norm_clip,
 			max_epochs=epochs,
-			# precision=precision,
+			precision=precision,
 			# val_check_interval=val_check_interval,
 			# num_sanity_val_steps=0,
 			# accumulate_grad_batches=accumulate_grad_batches

@@ -4,6 +4,7 @@ from transformers import AdamW
 from torch import nn
 import torch
 import pytorch_lightning as pl
+import torch_xla.debug.metrics as met
 
 
 class KnowledgeBaseInfusedBert(pl.LightningModule):
@@ -67,6 +68,8 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		# pos_obj_uniform_correct = pos_correct[:, 1].sum(dim=0)
 		# pos_uniform_correct = pos_subj_uniform_correct + pos_obj_uniform_correct
 		result = {'loss': loss}
+
+		print(met.metrics_report())
 		# result = pl.TrainResult(loss)
 		# result.log('train_loss', loss)
 		# result.log('train_exp_acc', pos_exp_correct / batch_size)
