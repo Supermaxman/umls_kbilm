@@ -17,18 +17,18 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v30'
+	model_name = 'umls-kbilm-v31'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	learning_rate = 5e-5
 	epochs = 10
 	gamma = 12.0
 	max_seq_len = 64
 	val_check_interval = 0.20
-	is_distributed = False
+	is_distributed = True
 	# export TPU_IP_ADDRESS=10.155.6.34
 	# export XRT_TPU_CONFIG="tpu_worker;0;$TPU_IP_ADDRESS:8470"
 	# batch_size = 64
-	batch_size = 8
+	batch_size = 16
 	negative_sample_size = 16
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
@@ -36,7 +36,7 @@ if __name__ == "__main__":
 	gpus = [4, 5, 6, 7]
 	use_tpus = False
 	tpu_cores = 8
-	num_workers = 4
+	num_workers = 1
 
 	pl.seed_everything(seed)
 
