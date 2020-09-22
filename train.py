@@ -93,6 +93,8 @@ if __name__ == "__main__":
 	if use_tpus:
 		trainer = pl.Trainer(
 			tpu_cores=tpu_cores,
+			progress_bar_refresh_rate=20,
+			num_sanity_val_steps=0,
 			default_root_dir=save_directory,
 			gradient_clip_val=grad_norm_clip,
 			max_epochs=epochs,
