@@ -85,8 +85,7 @@ if __name__ == "__main__":
 		batch_size=batch_size,
 		# shuffle=True,
 		num_workers=num_workers,
-		collate_fn=collator,
-		timeout=10
+		collate_fn=collator
 	)
 
 	# dm = UmlsRelationDataModule(
