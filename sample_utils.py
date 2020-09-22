@@ -46,15 +46,18 @@ class UniformNegativeSampler(NegativeRelationSampler):
 		super().__init__()
 		self.negative_sample_size = negative_sample_size
 		self.concepts = np.array(concepts)
-		try:
-			self.rank = dist.get_rank()
-			self.world_size = dist.get_world_size()
-		except:
-			self.rank = None
-			self.world_size = None
-		print(f'UniformNegativeSampler rank={self.rank}, world_size={self.world_size}')
+		self.initialized = False
 
 	def sample(self, pos_relation, batch_relations):
+		if not self.initialized:
+			try:
+				self.rank = dist.get_rank()
+				self.world_size = dist.get_world_size()
+			except:
+				self.rank = None
+				self.world_size = None
+			print(f'UniformNegativeSampler rank={self.rank}, world_size={self.world_size}')
+			self.initialized = True
 
 		sample_idxs = np.random.randint(len(self.concepts), size=self.negative_sample_size)
 		sample_concepts = self.concepts[sample_idxs]
