@@ -15,14 +15,14 @@ if __name__ == "__main__":
 	seed = 0
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
-	save_directory = 'models'
-	model_name = 'umls-kbilm-v10'
+	save_directory = '.'
+	model_name = 'umls-kbilm-v11'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	# tpu_config = 'tpu_worker;0;10.225.43.138:8470'
 	# os.environ['XRT_TPU_CONFIG'] = tpu_config
 	weight_decay = 0.01
 	learning_rate = 1e-5
-	epochs = 100
+	epochs = 10
 	gamma = 24.0
 	grad_norm_clip = 1.0
 	max_seq_len = 64
@@ -39,7 +39,7 @@ if __name__ == "__main__":
 	gpus = [4, 5, 6, 7]
 	use_tpus = True
 	tpu_cores = 1
-	num_workers = 0 if use_tpus else 4
+	num_workers = 1 if use_tpus else 4
 
 	pl.seed_everything(seed)
 

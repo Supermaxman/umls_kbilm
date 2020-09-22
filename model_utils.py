@@ -14,7 +14,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		self.gamma = gamma
 		self.learning_rate = learning_rate
 		self.weight_decay = weight_decay
-		# self.save_hyperparameters()
+		self.save_hyperparameters()
 
 	def forward(self, input_ids, attention_mask):
 		batch_size, sample_size, max_seq_len = input_ids.shape
@@ -47,9 +47,9 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		pos_loss = -nn.LogSigmoid()(self.gamma - pos_energies)
 		neg_loss = -neg_probs * nn.LogSigmoid()(neg_energies - self.gamma)
 		neg_loss = neg_loss.sum(dim=1)
-		batch_loss = pos_loss + neg_loss
+		loss = pos_loss + neg_loss
 		# TODO determine if i should mean here or not
-		loss = batch_loss.mean()
+		# loss = batch_loss.mean()
 		return pos_energies, neg_energies, neg_probs, loss
 
 	def training_step(self, batch, batch_nb):
@@ -95,13 +95,14 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 	# 	return result
 
 	def configure_optimizers(self):
-		params = self._get_optimizer_params(self.weight_decay)
-		optimizer = AdamW(
-			params,
-			lr=self.learning_rate,
-			weight_decay=self.weight_decay,
-			correct_bias=False
-		)
+		# params = self._get_optimizer_params(self.weight_decay)
+		# optimizer = AdamW(
+		# 	params,
+		# 	lr=self.learning_rate,
+		# 	weight_decay=self.weight_decay,
+		# 	correct_bias=False
+		# )
+		optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 		return optimizer
 
 	def _get_optimizer_params(self, weight_decay):
