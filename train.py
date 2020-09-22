@@ -17,11 +17,13 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v33'
+	model_name = 'umls-kbilm-v34'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	learning_rate = 5e-5
+	learning_rate = 1e-5
 	epochs = 10
 	gamma = 12.0
+	gradient_clip_val = 1.0
+	weight_decay = 0.01
 	max_seq_len = 64
 	val_check_interval = 0.20
 	is_distributed = True
@@ -127,7 +129,8 @@ if __name__ == "__main__":
 			max_epochs=epochs,
 			precision=precision,
 			val_check_interval=val_check_interval,
-			distributed_backend=backend
+			distributed_backend=backend,
+			gradient_clip_val=gradient_clip_val,
 		)
 	trainer.fit(model, train_dataloader, val_dataloader)
 

@@ -7,11 +7,12 @@ import pytorch_lightning as pl
 
 
 class KnowledgeBaseInfusedBert(pl.LightningModule):
-	def __init__(self, pre_model_name, gamma, learning_rate):
+	def __init__(self, pre_model_name, gamma, learning_rate, weight_decay):
 		super().__init__()
 		self.bert = BertModel.from_pretrained(pre_model_name)
 		self.gamma = gamma
 		self.learning_rate = learning_rate
+		self.weight_decay = weight_decay
 		self.save_hyperparameters()
 
 	def forward(self, input_ids, attention_mask):
@@ -85,8 +86,25 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		return result
 
 	def configure_optimizers(self):
-		optimizer = torch.optim.Adam(
-			self.parameters(),
-			lr=self.learning_rate
+		params = self._get_optimizer_params(self.weight_decay)
+		optimizer = AdamW(
+			params,
+			lr=self.learning_rate,
+			weight_decay=self.weight_decay,
+			correct_bias=False
 		)
+		# optimizer = torch.optim.Adam(
+		# 	self.parameters(),
+		# 	lr=self.learning_rate
+		# )
 		return optimizer
+
+	def _get_optimizer_params(self, weight_decay):
+		param_optimizer = list(self.named_parameters())
+		no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+		optimizer_params = [
+			{'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)],
+			 'weight_decay': weight_decay},
+			{'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}]
+
+		return optimizer_params
