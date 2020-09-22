@@ -1,7 +1,4 @@
 
-import torch
-import numpy as np
-import random
 from transformers import BertTokenizer
 import os
 import logging
@@ -38,10 +35,9 @@ if __name__ == "__main__":
 	precision = 32
 	gpus = [4, 5, 6, 7]
 	num_workers = 4
+	use_tpus = False
 
-	random.seed(seed)
-	torch.manual_seed(seed)
-	np.random.seed(seed)
+	pl.seed_everything(seed)
 
 	save_directory = os.path.join(save_directory, model_name)
 
@@ -91,17 +87,28 @@ if __name__ == "__main__":
 	)
 
 	logging.info('Training...')
-	trainer = pl.Trainer(
-		gpus=gpus,
-		default_root_dir=save_directory,
-		gradient_clip_val=grad_norm_clip,
-		max_epochs=epochs,
-		precision=precision,
-		distributed_backend='ddp' if is_distributed else 'dp',
-		val_check_interval=val_check_interval,
-		accumulate_grad_batches=accumulate_grad_batches,
-		amp_backend=amp_backend
-	)
+	if use_tpus:
+		trainer = pl.Trainer(
+			tpu_cores=8,
+			default_root_dir=save_directory,
+			gradient_clip_val=grad_norm_clip,
+			max_epochs=epochs,
+			precision=precision,
+			val_check_interval=val_check_interval,
+			accumulate_grad_batches=accumulate_grad_batches
+		)
+	else:
+		trainer = pl.Trainer(
+			gpus=gpus,
+			default_root_dir=save_directory,
+			gradient_clip_val=grad_norm_clip,
+			max_epochs=epochs,
+			precision=precision,
+			distributed_backend='ddp' if is_distributed else 'dp',
+			val_check_interval=val_check_interval,
+			accumulate_grad_batches=accumulate_grad_batches,
+			amp_backend=amp_backend
+		)
 	trainer.fit(model, datamodule=dm)
 
 	# TODO eval on test
