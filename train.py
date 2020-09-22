@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from model_utils import KnowledgeBaseInfusedBert
 from data_utils import RelationCollator, UmlsRelationDataset, load_umls, split_data
 from kb_utils import NameRelationExampleCreator
-from sample_utils import UniformNegativeSampler
+from sample_utils import UniformNegativeSampler, BatchNegativeSampler
 
 
 if __name__ == "__main__":
@@ -17,7 +17,7 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v32'
+	model_name = 'umls-kbilm-v33'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	learning_rate = 5e-5
 	epochs = 10
@@ -28,12 +28,13 @@ if __name__ == "__main__":
 	# export TPU_IP_ADDRESS=10.155.6.34
 	# export XRT_TPU_CONFIG="tpu_worker;0;$TPU_IP_ADDRESS:8470"
 	# batch_size = 64
-	batch_size = 4
+	batch_size = 8
 	negative_sample_size = 16
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
 	precision = 32
-	gpus = [4, 5, 6, 7]
+	# gpus = [4, 5, 6, 7]
+	gpus = [4]
 	use_tpus = False
 	tpu_cores = 8
 	num_workers = 1
@@ -68,8 +69,11 @@ if __name__ == "__main__":
 
 	logging.info('Loading collator...')
 	example_creator = NameRelationExampleCreator()
-	neg_sampler = UniformNegativeSampler(
-		list(concepts.values()),
+	# neg_sampler = UniformNegativeSampler(
+	# 	list(concepts.values()),
+	# 	negative_sample_size
+	# )
+	neg_sampler = BatchNegativeSampler(
 		negative_sample_size
 	)
 	tokenizer = BertTokenizer.from_pretrained(pre_model_name)
@@ -113,13 +117,17 @@ if __name__ == "__main__":
 			val_check_interval=val_check_interval
 		)
 	else:
+		if len(gpus) > 1:
+			backend = 'ddp' if is_distributed else 'dp'
+		else:
+			backend = None
 		trainer = pl.Trainer(
 			gpus=gpus,
 			default_root_dir=save_directory,
 			max_epochs=epochs,
 			precision=precision,
 			val_check_interval=val_check_interval,
-			distributed_backend='ddp' if is_distributed else 'dp'
+			distributed_backend=backend
 		)
 	trainer.fit(model, train_dataloader, val_dataloader)
 
