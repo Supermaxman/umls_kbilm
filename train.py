@@ -24,7 +24,7 @@ if __name__ == "__main__":
 	log_directory = 'logs'
 	model_name = 'umls-kbilm-v2'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	batch_size = 8
+	batch_size = 16
 	weight_decay = 0.01
 	learning_rate = 1e-5
 	epochs = 100
@@ -32,6 +32,8 @@ if __name__ == "__main__":
 	grad_norm_clip = 1.0
 	max_seq_len = 64
 	dev_log_frequency = 10
+	precision = 32
+	# precision = 16
 
 	random.seed(seed)
 	torch.manual_seed(seed)
@@ -77,14 +79,14 @@ if __name__ == "__main__":
 		train_dataset,
 		batch_size=batch_size,
 		shuffle=True,
-		num_workers=1,
+		num_workers=8,
 		collate_fn=collator
 	)
 	val_dataloader = DataLoader(
 		val_dataset,
 		batch_size=batch_size,
 		shuffle=False,
-		num_workers=1,
+		num_workers=8,
 		collate_fn=collator
 	)
 
@@ -101,10 +103,12 @@ if __name__ == "__main__":
 	model = KnowledgeBaseInfusedBert(bert, gamma, learning_rate, weight_decay)
 
 	trainer = pl.Trainer(
-		gpus=[4],
+		gpus=[4, 5, 6, 7],
 		default_root_dir=save_directory,
 		gradient_clip_val=grad_norm_clip,
-		max_epochs=epochs
+		max_epochs=epochs,
+		precision=precision,
+		distributed_backend='ddp'
 	)
 	trainer.fit(model, train_dataloader, val_dataloader)
 
