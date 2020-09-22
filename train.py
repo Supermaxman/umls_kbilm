@@ -36,8 +36,9 @@ if __name__ == "__main__":
 	amp_backend = 'native'
 	precision = 32
 	gpus = [4, 5, 6, 7]
-	num_workers = 4
 	use_tpus = True
+	tpu_cores = 8
+	num_workers = 1 if use_tpus else 4
 
 	pl.seed_everything(seed)
 
@@ -91,7 +92,7 @@ if __name__ == "__main__":
 	logging.info('Training...')
 	if use_tpus:
 		trainer = pl.Trainer(
-			tpu_cores=8,
+			tpu_cores=tpu_cores,
 			default_root_dir=save_directory,
 			gradient_clip_val=grad_norm_clip,
 			max_epochs=epochs,
