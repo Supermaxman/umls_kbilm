@@ -24,7 +24,7 @@ if __name__ == "__main__":
 	gamma = 12.0
 	max_seq_len = 64
 	val_check_interval = 0.20
-	is_distributed = True
+	is_distributed = False
 	# export TPU_IP_ADDRESS=10.155.6.34
 	# export XRT_TPU_CONFIG="tpu_worker;0;$TPU_IP_ADDRESS:8470"
 	# batch_size = 64
