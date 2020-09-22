@@ -82,14 +82,14 @@ if __name__ == "__main__":
 		train_dataset,
 		batch_size=batch_size,
 		shuffle=True,
-		num_workers=0,
+		num_workers=1,
 		collate_fn=collator
 	)
 	val_dataloader = DataLoader(
 		val_dataset,
 		batch_size=batch_size,
 		shuffle=False,
-		num_workers=0,
+		num_workers=1,
 		collate_fn=collator
 	)
 
