@@ -16,11 +16,11 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		self.weight_decay = weight_decay
 
 	def forward(self, input_ids, attention_mask):
-		batch_size, sample_size = input_ids.shape
+		batch_size, sample_size, max_seq_len = input_ids.shape
 		# [batch_size * sample_size, max_seq_len]
-		input_ids = input_ids.view(batch_size * sample_size, -1)
+		input_ids = input_ids.view(batch_size * sample_size, max_seq_len)
 		# [batch_size * sample_size, max_seq_len]
-		attention_mask = attention_mask.view(batch_size * sample_size, -1)
+		attention_mask = attention_mask.view(batch_size * sample_size, max_seq_len)
 		outputs = self.bert(
 			input_ids,
 			attention_mask=attention_mask
