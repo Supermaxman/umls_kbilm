@@ -24,7 +24,7 @@ if __name__ == "__main__":
 	log_directory = 'logs'
 	model_name = 'umls-kbilm-v2'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	batch_size = 32
+	batch_size = 16
 	negative_sample_size = 8
 	weight_decay = 0.01
 	learning_rate = 1e-5
@@ -111,7 +111,7 @@ if __name__ == "__main__":
 		gradient_clip_val=grad_norm_clip,
 		max_epochs=epochs,
 		precision=precision,
-		distributed_backend='ddp'
+		distributed_backend='dp'
 	)
 	trainer.fit(model, train_dataloader, val_dataloader)
 
