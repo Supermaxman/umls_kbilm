@@ -57,19 +57,19 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		batch_size = energies.shape[0]
 		pos_energies, neg_energies, neg_probs, loss = self._energy_loss(energies)
 
-		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
-		# []
-		pos_exp_correct = (neg_probs * pos_correct).sum(dim=1).sum(dim=0)
-		# first neg example replaces subj
-		pos_subj_uniform_correct = pos_correct[:, 0].sum(dim=0)
-		# second neg example replaces obj
-		pos_obj_uniform_correct = pos_correct[:, 1].sum(dim=0)
-		pos_uniform_correct = pos_subj_uniform_correct + pos_obj_uniform_correct
+		# pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
+		# # []
+		# pos_exp_correct = (neg_probs * pos_correct).sum(dim=1).sum(dim=0)
+		# # first neg example replaces subj
+		# pos_subj_uniform_correct = pos_correct[:, 0].sum(dim=0)
+		# # second neg example replaces obj
+		# pos_obj_uniform_correct = pos_correct[:, 1].sum(dim=0)
+		# pos_uniform_correct = pos_subj_uniform_correct + pos_obj_uniform_correct
 
 		result = pl.TrainResult(loss)
 		result.log('train_loss', loss)
-		result.log('train_exp_acc', pos_exp_correct / batch_size)
-		result.log('train_uniform_acc', pos_uniform_correct / (2 * batch_size))
+		# result.log('train_exp_acc', pos_exp_correct / batch_size)
+		# result.log('train_uniform_acc', pos_uniform_correct / (2 * batch_size))
 		return result
 
 	def validation_step(self, batch, batch_nb):
