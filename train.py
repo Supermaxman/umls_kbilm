@@ -93,7 +93,7 @@ if __name__ == "__main__":
 		collate_fn=collator
 	)
 	val_dataloader = DataLoader(
-		train_dataset,
+		val_dataset,
 		batch_size=batch_size,
 		num_workers=num_workers,
 		collate_fn=collator
