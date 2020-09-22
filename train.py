@@ -24,8 +24,7 @@ if __name__ == "__main__":
 	log_directory = 'logs'
 	model_name = 'umls-kbilm-v3'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	is_distributed = True
-	batch_size = 8
+	batch_size = 32
 	negative_sample_size = 16
 	weight_decay = 0.01
 	learning_rate = 1e-5
@@ -34,8 +33,9 @@ if __name__ == "__main__":
 	grad_norm_clip = 1.0
 	max_seq_len = 64
 	dev_log_frequency = 10
-	# precision = 32
-	precision = 16
+	is_distributed = False
+	precision = 32
+	# precision = 16
 
 	random.seed(seed)
 	torch.manual_seed(seed)
