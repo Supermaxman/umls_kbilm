@@ -60,7 +60,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
 		# # []
 		exp_acc = (neg_probs * pos_correct).sum(dim=1).sum(dim=0) / batch_size
-		uniform_acc = pos_correct.sum(dim=1).sum(dim=0) / neg_size
+		uniform_acc = pos_correct.sum(dim=1).sum(dim=0) / (batch_size * neg_size)
 		# tensorboard_logs = {
 		# 	'train_exp_acc': exp_acc,
 		# 	'train_uniform_acc': uniform_acc
@@ -83,7 +83,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
 		# []
 		exp_acc = (neg_probs * pos_correct).sum(dim=1).sum(dim=0) / batch_size
-		uniform_acc = pos_correct.sum(dim=1).sum(dim=0) / neg_size
+		uniform_acc = pos_correct.sum(dim=1).sum(dim=0) / (batch_size * neg_size)
 		# first neg example replaces subj
 		# pos_subj_uniform_correct = pos_correct[:, 0].sum(dim=0)
 		# second neg example replaces obj

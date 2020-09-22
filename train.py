@@ -16,7 +16,7 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v21'
+	model_name = 'umls-kbilm-v22'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	learning_rate = 1e-5
 	epochs = 10
@@ -33,11 +33,11 @@ if __name__ == "__main__":
 	# accumulate_grad_batches = 4
 	# amp_backend = 'native'
 	amp_backend = 'native'
-	precision = 16
 	gpus = [4, 5, 6, 7]
 	use_tpus = True
 	tpu_cores = 8
 	num_workers = 1 if use_tpus else 4
+	precision = 16 if use_tpus else 32
 
 	pl.seed_everything(seed)
 
