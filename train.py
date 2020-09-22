@@ -37,7 +37,7 @@ if __name__ == "__main__":
 	gpus = [4, 5, 6, 7]
 	use_tpus = True
 	tpu_cores = 8
-	num_workers = 2 if use_tpus else 4
+	num_workers = 1 if use_tpus else 4
 
 	pl.seed_everything(seed)
 
@@ -73,33 +73,32 @@ if __name__ == "__main__":
 	)
 
 	logging.info('Loading dataset...')
+	_, _, relations = load_umls(umls_directory, data_folder)
+	train_data, val_data, _ = split_data(relations)
+	train_dataset = UmlsRelationDataset(train_data)
+	val_dataset = UmlsRelationDataset(val_data)
 
-	# _, _, relations = load_umls(umls_directory, data_folder)
-	# train_data, val_data, _ = split_data(relations)
-	# train_dataset = UmlsRelationDataset(train_data)
-	# val_dataset = UmlsRelationDataset(val_data)
-
-	# train_dataloader = DataLoader(
-	# 	train_dataset,
-	# 	batch_size=batch_size,
-	# 	shuffle=True,
-	# 	num_workers=num_workers,
-	# 	collate_fn=collator
-	# )
-	# val_dataloader = DataLoader(
-	# 	val_dataset,
-	# 	batch_size=batch_size,
-	# 	num_workers=num_workers,
-	# 	collate_fn=collator
-	# )
-
-	dm = UmlsRelationDataModule(
-		data_folder=data_folder,
-		umls_directory=umls_directory,
+	train_dataloader = DataLoader(
+		train_dataset,
+		batch_size=batch_size,
+		shuffle=True,
+		num_workers=num_workers,
+		collate_fn=collator
+	)
+	val_dataloader = DataLoader(
+		val_dataset,
 		batch_size=batch_size,
 		num_workers=num_workers,
-		collator=collator
+		collate_fn=collator
 	)
+
+	# dm = UmlsRelationDataModule(
+	# 	data_folder=data_folder,
+	# 	umls_directory=umls_directory,
+	# 	batch_size=batch_size,
+	# 	num_workers=num_workers,
+	# 	collator=collator
+	# )
 
 	logging.info('Loading model...')
 	model = KnowledgeBaseInfusedBert(
@@ -133,7 +132,8 @@ if __name__ == "__main__":
 			accumulate_grad_batches=accumulate_grad_batches,
 			amp_backend=amp_backend
 		)
-	trainer.fit(model, datamodule=dm)
+	# trainer.fit(model, datamodule=dm)
+	trainer.fit(model, train_dataloader, val_dataloader)
 
 	# TODO eval on test
 	# logging.info('Evaluating...')
