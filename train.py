@@ -36,7 +36,7 @@ if __name__ == "__main__":
 	amp_backend = 'native'
 	precision = 32
 	gpus = [4, 5, 6, 7]
-	use_tpus = True
+	use_tpus = False
 	tpu_cores = 8
 	num_workers = 1
 
