@@ -38,7 +38,7 @@ if __name__ == "__main__":
 	gpus = [4, 5, 6, 7]
 	use_tpus = True
 	tpu_cores = 8
-	num_workers = 1 if use_tpus else 4
+	num_workers = 0 if use_tpus else 4
 
 	pl.seed_everything(seed)
 

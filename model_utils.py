@@ -14,7 +14,6 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		self.gamma = gamma
 		self.learning_rate = learning_rate
 		self.weight_decay = weight_decay
-		self.save_hyperparameters()
 
 	def forward(self, input_ids, attention_mask):
 		batch_size, sample_size, max_seq_len = input_ids.shape
@@ -37,7 +36,9 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 
 		return energies
 
-	def _energy_loss(self, energies):
+	def training_step(self, batch, batch_nb):
+		energies = self(**batch)
+		batch_size = energies.shape[0]
 		# [batch_size]
 		pos_energies = energies[:, 0]
 		# [batch_size, neg_size]
@@ -50,12 +51,6 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		batch_loss = pos_loss + neg_loss
 		# TODO determine if i should mean here or not
 		loss = batch_loss.mean()
-		return pos_energies, neg_energies, neg_probs, loss
-
-	def training_step(self, batch, batch_nb):
-		energies = self(**batch)
-		batch_size = energies.shape[0]
-		pos_energies, neg_energies, neg_probs, loss = self._energy_loss(energies)
 
 		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
 		# []
@@ -75,7 +70,18 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 	def validation_step(self, batch, batch_nb):
 		energies = self(**batch)
 		batch_size = energies.shape[0]
-		pos_energies, neg_energies, neg_probs, loss = self._energy_loss(energies)
+		# [batch_size]
+		pos_energies = energies[:, 0]
+		# [batch_size, neg_size]
+		neg_energies = energies[:, 1:]
+		with torch.no_grad():
+			neg_probs = nn.Softmax(dim=1)(-neg_energies)
+		pos_loss = -nn.LogSigmoid()(self.gamma - pos_energies)
+		neg_loss = -neg_probs * nn.LogSigmoid()(neg_energies - self.gamma)
+		neg_loss = neg_loss.sum(dim=1)
+		batch_loss = pos_loss + neg_loss
+		# TODO determine if i should mean here or not
+		loss = batch_loss.mean()
 
 		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
 		# []
@@ -95,7 +101,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		return result
 
 	def configure_optimizers(self):
-		params = self._get_optimizer_params(self.weight_decay)
+		params = self.get_optimizer_params(self.weight_decay)
 		optimizer = AdamW(
 			params,
 			lr=self.learning_rate,
@@ -104,7 +110,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		)
 		return optimizer
 
-	def _get_optimizer_params(self, weight_decay):
+	def get_optimizer_params(self, weight_decay):
 		param_optimizer = list(self.named_parameters())
 		no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
 		optimizer_params = [
