@@ -5,10 +5,13 @@ from tqdm import tqdm
 import pickle
 import random
 import logging
+from torch.utils.data import DataLoader
+import pytorch_lightning as pl
 
 from umls_reader import read_umls
 from umls import UmlsAtom, UmlsRelation
 from kb_utils import RelationType, Concept, Relation, RelationExampleCreator
+from kb_utils import NameRelationExampleCreator
 
 
 def load_rel_merge_mapping(filepath):
@@ -273,3 +276,4 @@ class RelationCollator(object):
 		}
 
 		return batch
+
