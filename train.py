@@ -24,7 +24,7 @@ if __name__ == "__main__":
 	log_directory = 'logs'
 	model_name = 'umls-kbilm-v3'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	batch_size = 32
+	batch_size = 8
 	negative_sample_size = 16
 	weight_decay = 0.01
 	learning_rate = 1e-5
@@ -32,10 +32,11 @@ if __name__ == "__main__":
 	gamma = 24.0
 	grad_norm_clip = 1.0
 	max_seq_len = 64
-	dev_log_frequency = 10
-	is_distributed = False
-	precision = 32
-	# precision = 16
+	val_check_interval = 0.20
+	is_distributed = True
+	# precision = 32
+	precision = 16
+	num_workers = 1
 
 	random.seed(seed)
 	torch.manual_seed(seed)
@@ -78,23 +79,19 @@ if __name__ == "__main__":
 	# ensure negative_sample_size is correct based on batch_size
 	collator = RelationCollator(tokenizer, example_creator, max_seq_len, negative_sample_size)
 
-	train_sampler = DistributedSampler(train_dataset, shuffle=True) if is_distributed else None
 	train_dataloader = DataLoader(
 		train_dataset,
 		batch_size=batch_size,
-		shuffle=(train_sampler is None),
-		num_workers=1,
-		collate_fn=collator,
-		sampler=train_sampler
+		shuffle=True,
+		num_workers=num_workers,
+		collate_fn=collator
 	)
-	val_sampler = DistributedSampler(val_dataset, shuffle=False) if is_distributed else None
 	val_dataloader = DataLoader(
 		val_dataset,
 		batch_size=batch_size,
 		shuffle=False,
-		num_workers=1,
-		collate_fn=collator,
-		sampler=val_sampler
+		num_workers=num_workers,
+		collate_fn=collator
 	)
 
 	# test_dataloader = DataLoader(
@@ -114,7 +111,8 @@ if __name__ == "__main__":
 		gradient_clip_val=grad_norm_clip,
 		max_epochs=epochs,
 		precision=precision,
-		distributed_backend='ddp' if is_distributed else 'dp'
+		distributed_backend='ddp' if is_distributed else 'dp',
+		val_check_interval=val_check_interval
 	)
 	trainer.fit(model, train_dataloader, val_dataloader)
 
