@@ -58,14 +58,9 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 
 		neg_size = neg_energies.shape[1]
 		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
-		# # []
+
 		exp_acc = (neg_probs * pos_correct).sum(dim=1).sum(dim=0) / batch_size
 		uniform_acc = pos_correct.sum(dim=1).sum(dim=0) / (batch_size * neg_size)
-		# tensorboard_logs = {
-		# 	'train_exp_acc': exp_acc,
-		# 	'train_uniform_acc': uniform_acc
-		# }
-		# result = {'loss': loss, 'log': tensorboard_logs}
 
 		# print(met.metrics_report())
 		result = pl.TrainResult(loss)
@@ -81,19 +76,13 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 
 		neg_size = neg_energies.shape[1]
 		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
-		# []
+
 		exp_acc = (neg_probs * pos_correct).sum(dim=1).sum(dim=0) / batch_size
 		uniform_acc = pos_correct.sum(dim=1).sum(dim=0) / (batch_size * neg_size)
-		# first neg example replaces subj
-		# pos_subj_uniform_correct = pos_correct[:, 0].sum(dim=0)
-		# second neg example replaces obj
-		# pos_obj_uniform_correct = pos_correct[:, 1].sum(dim=0)
-		# pos_uniform_correct = pos_subj_uniform_correct + pos_obj_uniform_correct
 		result = pl.EvalResult()
 		result.log('val_loss', loss)
 		result.log('val_exp_acc', exp_acc)
 		result.log('val_uniform_acc', uniform_acc)
-		# result = {'val_loss': loss}
 		return result
 
 	def configure_optimizers(self):
