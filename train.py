@@ -114,11 +114,12 @@ if __name__ == "__main__":
 		trainer = pl.Trainer(
 			tpu_cores=tpu_cores,
 			progress_bar_refresh_rate=1,
-			# default_root_dir=save_directory,
+			default_root_dir=save_directory,
 			gradient_clip_val=grad_norm_clip,
 			max_epochs=epochs,
 			precision=precision,
 			val_check_interval=val_check_interval,
+			num_sanity_val_steps=0,
 			accumulate_grad_batches=accumulate_grad_batches
 		)
 	else:
