@@ -24,8 +24,8 @@ if __name__ == "__main__":
 	log_directory = 'logs'
 	model_name = 'umls-kbilm-v2'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	batch_size = 16
-	negative_sample_size = 8
+	batch_size = 8
+	negative_sample_size = 16
 	weight_decay = 0.01
 	learning_rate = 1e-5
 	epochs = 100
