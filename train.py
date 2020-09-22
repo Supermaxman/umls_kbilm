@@ -16,7 +16,7 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v15'
+	model_name = 'umls-kbilm-v16'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	weight_decay = 0.01
 	learning_rate = 1e-5
@@ -27,13 +27,13 @@ if __name__ == "__main__":
 	val_check_interval = 0.20
 	is_distributed = True
 	# batch_size = 64
-	batch_size = 16
-	negative_sample_size = 8
+	batch_size = 8
+	negative_sample_size = 16
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
 	# amp_backend = 'native'
 	amp_backend = 'native'
-	precision = 32
+	precision = 16
 	gpus = [4, 5, 6, 7]
 	use_tpus = True
 	tpu_cores = 8
