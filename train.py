@@ -6,7 +6,7 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
 from model_utils import KnowledgeBaseInfusedBert
-from data_utils import RelationCollator, UmlsRelationDataModule, UmlsRelationDataset, load_umls, split_data
+from data_utils import RelationCollator, UmlsRelationDataset, load_umls, split_data
 from kb_utils import NameRelationExampleCreator
 
 
@@ -24,6 +24,8 @@ if __name__ == "__main__":
 	max_seq_len = 64
 	val_check_interval = 0.20
 	is_distributed = True
+	# export TPU_IP_ADDRESS=10.155.6.34
+	# export XRT_TPU_CONFIG="tpu_worker;0;$TPU_IP_ADDRESS:8470"
 	# batch_size = 64
 	batch_size = 8
 	negative_sample_size = 16
