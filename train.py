@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from model_utils import KnowledgeBaseInfusedBert
 from data_utils import RelationCollator, UmlsRelationDataset, load_umls, split_data
 from kb_utils import NameRelationExampleCreator
+from sample_utils import UniformNegativeSampler
 
 
 if __name__ == "__main__":
@@ -16,7 +17,7 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v23'
+	model_name = 'umls-kbilm-v24'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	learning_rate = 1e-5
 	epochs = 10
@@ -27,13 +28,13 @@ if __name__ == "__main__":
 	# export TPU_IP_ADDRESS=10.155.6.34
 	# export XRT_TPU_CONFIG="tpu_worker;0;$TPU_IP_ADDRESS:8470"
 	# batch_size = 64
-	batch_size = 8
-	negative_sample_size = 16
+	batch_size = 2
+	negative_sample_size = 32
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
 	# amp_backend = 'native'
 	amp_backend = 'native'
-	precision = 16
+	precision = 32
 	gpus = [4, 5, 6, 7]
 	use_tpus = True
 	tpu_cores = 8
@@ -60,24 +61,28 @@ if __name__ == "__main__":
 			logging.StreamHandler()]
 	)
 
+	logging.info('Loading dataset...')
+
+	concepts, relation_types, relations = load_umls(umls_directory, data_folder)
+	train_data, val_data, _ = split_data(relations)
+	train_dataset = UmlsRelationDataset(train_data)
+	val_dataset = UmlsRelationDataset(val_data)
+
 	logging.info('Loading collator...')
 	example_creator = NameRelationExampleCreator()
+	neg_sampler = UniformNegativeSampler(
+		list(concepts.values()),
+		negative_sample_size
+	)
 	tokenizer = BertTokenizer.from_pretrained(pre_model_name)
 	# ensure negative_sample_size is correct based on batch_size
 	collator = RelationCollator(
 		tokenizer,
 		example_creator,
+		neg_sampler,
 		max_seq_len,
-		negative_sample_size,
 		force_max_seq_len=use_tpus
 	)
-
-	logging.info('Loading dataset...')
-
-	_, _, relations = load_umls(umls_directory, data_folder)
-	train_data, val_data, _ = split_data(relations)
-	train_dataset = UmlsRelationDataset(train_data)
-	val_dataset = UmlsRelationDataset(val_data)
 
 	train_dataloader = DataLoader(
 		train_dataset,

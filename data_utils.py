@@ -11,6 +11,7 @@ import pytorch_lightning as pl
 from umls_reader import read_umls
 from umls import UmlsAtom, UmlsRelation
 from kb_utils import RelationType, Concept, Relation, RelationExampleCreator
+from sample_utils import NegativeRelationSampler
 
 
 def load_rel_merge_mapping(filepath):
@@ -232,34 +233,29 @@ class UmlsRelationDataset(Dataset):
 
 class RelationCollator(object):
 	def __init__(
-			self, tokenizer, example_creator: RelationExampleCreator,
-			max_seq_len: int, negative_sample_size: int, force_max_seq_len: bool):
+			self, tokenizer, example_creator: RelationExampleCreator, neg_sampler: NegativeRelationSampler,
+			max_seq_len: int, force_max_seq_len: bool):
 		self.tokenizer = tokenizer
 		self.example_creator = example_creator
+		self.neg_sampler = neg_sampler
 		self.max_seq_len = max_seq_len
-		self.negative_sample_size = negative_sample_size
 		self.force_max_seq_len = force_max_seq_len
 
 	def __call__(self, relations):
 		# creates text examples
-		batch_size = len(relations)
-		batch_negative_sample_size = min(self.negative_sample_size, 2 * (batch_size - 1))
+		batch_negative_sample_size = None
 		examples = []
 		for rel in relations:
 			pos_example = self.example_creator.create(rel)
 			examples.append(pos_example)
-			all_negatives = []
-			for other_rel in relations:
-				if other_rel != rel:
-					neg_rel_subj = Relation(subj=other_rel.subj, rel_type=rel.rel_type, obj=rel.obj)
-					neg_rel_subj_example = self.example_creator.create(neg_rel_subj)
-					neg_rel_obj = Relation(subj=rel.subj, rel_type=rel.rel_type, obj=other_rel.obj)
-					neg_rel_obj_example = self.example_creator.create(neg_rel_obj)
-					all_negatives.append(neg_rel_subj_example)
-					all_negatives.append(neg_rel_obj_example)
-			random.shuffle(all_negatives)
-			samples = all_negatives[:batch_negative_sample_size]
-			examples.extend(samples)
+			num_samples = 0
+			for neg_rel in self.neg_sampler.sample(pos_example, relations):
+				neg_example = self.example_creator.create(neg_rel)
+				examples.append(neg_example)
+				num_samples += 1
+			if batch_negative_sample_size is None:
+				batch_negative_sample_size = num_samples
+
 		# "input_ids": batch["input_ids"].to(device),
 		# "attention_mask": batch["attention_mask"].to(device),
 		tokenizer_batch = self.tokenizer.batch_encode_plus(
