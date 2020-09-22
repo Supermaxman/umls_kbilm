@@ -4,6 +4,7 @@ import os
 import logging
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
+from transformers import BertModel
 
 from model_utils import KnowledgeBaseInfusedBert
 from data_utils import RelationCollator, UmlsRelationDataModule, UmlsRelationDataset, load_umls, split_data
@@ -22,6 +23,9 @@ if __name__ == "__main__":
 	# os.environ['XRT_TPU_CONFIG'] = tpu_config
 	os.environ['XLA_USE_BF16'] = "1"
 	os.environ['XLA_TENSOR_ALLOCATOR_MAXSIZE'] = '100000000'
+	os.environ['TRIM_GRAPH_SIZE'] = '500000'
+	os.environ['TRIM_GRAPH_CHECK_FREQUENCY'] = '20000'
+
 	weight_decay = 0.01
 	learning_rate = 1e-5
 	epochs = 10
@@ -99,8 +103,10 @@ if __name__ == "__main__":
 	# )
 
 	logging.info('Loading model...')
+
+	bert = BertModel.from_pretrained(pre_model_name)
 	model = KnowledgeBaseInfusedBert(
-		pre_model_name=pre_model_name,
+		bert=bert,
 		gamma=gamma,
 		learning_rate=learning_rate,
 		weight_decay=weight_decay
