@@ -21,7 +21,7 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v4'
+	model_name = 'umls-kbilm-v5'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	weight_decay = 0.01
 	learning_rate = 1e-5
@@ -34,6 +34,8 @@ if __name__ == "__main__":
 	# batch_size = 64
 	batch_size = 16
 	negative_sample_size = 8
+	accumulate_grad_batches = 4
+	# accumulate_grad_batches = 1
 	precision = 32
 	gpus = [4, 5, 6, 7]
 	num_workers = 1 if is_distributed else len(gpus)
@@ -112,7 +114,8 @@ if __name__ == "__main__":
 		max_epochs=epochs,
 		precision=precision,
 		distributed_backend='ddp' if is_distributed else 'dp',
-		val_check_interval=val_check_interval
+		val_check_interval=val_check_interval,
+		accumulate_grad_batches=accumulate_grad_batches
 	)
 	trainer.fit(model, train_dataloader, val_dataloader)
 
