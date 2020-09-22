@@ -16,7 +16,7 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = '.'
-	model_name = 'umls-kbilm-v11'
+	model_name = 'umls-kbilm-v12'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	# tpu_config = 'tpu_worker;0;10.225.43.138:8470'
 	# os.environ['XRT_TPU_CONFIG'] = tpu_config
@@ -34,7 +34,7 @@ if __name__ == "__main__":
 	val_check_interval = 0.20
 	is_distributed = True
 	# batch_size = 64
-	batch_size = 4
+	batch_size = 2
 	negative_sample_size = 8
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
@@ -119,14 +119,14 @@ if __name__ == "__main__":
 	if use_tpus:
 		trainer = pl.Trainer(
 			tpu_cores=tpu_cores,
-			progress_bar_refresh_rate=1,
-			default_root_dir=save_directory,
-			gradient_clip_val=grad_norm_clip,
+			# progress_bar_refresh_rate=1,
+			# default_root_dir=save_directory,
+			# gradient_clip_val=grad_norm_clip,
 			max_epochs=epochs,
-			precision=precision,
-			val_check_interval=val_check_interval,
-			num_sanity_val_steps=0,
-			accumulate_grad_batches=accumulate_grad_batches
+			# precision=precision,
+			# val_check_interval=val_check_interval,
+			# num_sanity_val_steps=0,
+			# accumulate_grad_batches=accumulate_grad_batches
 		)
 	else:
 		trainer = pl.Trainer(
