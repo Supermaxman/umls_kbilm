@@ -237,22 +237,21 @@ class RelationCollator(object):
 	def __call__(self, relations):
 		# creates text examples
 
-		pos_examples = []
-		neg_examples = []
+		examples = []
 		for rel in relations:
 			pos_example = self.example_creator.create(rel)
-			pos_examples.append(pos_example)
+			examples.append(pos_example)
 			for other_rel in relations:
 				if other_rel != rel:
 					neg_rel_subj = Relation(subj=other_rel.subj, rel_type=rel.rel_type, obj=rel.obj)
 					neg_rel_subj_example = self.example_creator.create(neg_rel_subj)
 					neg_rel_obj = Relation(subj=rel.subj, rel_type=rel.rel_type, obj=other_rel.obj)
 					neg_rel_obj_example = self.example_creator.create(neg_rel_obj)
-					neg_examples.append(neg_rel_subj_example)
-					neg_examples.append(neg_rel_obj_example)
-		examples = pos_examples + neg_examples
-
-		batch = self.tokenizer.batch_encode_plus(
+					examples.append(neg_rel_subj_example)
+					examples.append(neg_rel_obj_example)
+		# "input_ids": batch["input_ids"].to(device),
+		# "attention_mask": batch["attention_mask"].to(device),
+		tokenizer_batch = self.tokenizer.batch_encode_plus(
 			batch_text_or_text_pairs=examples,
 			add_special_tokens=True,
 			padding=True,
@@ -260,8 +259,13 @@ class RelationCollator(object):
 			truncation=True,
 			max_length=self.max_seq_len
 		)
-		batch['pos_size'] = len(relations)
-		batch['neg_size'] = len(neg_examples) // len(relations)
-		batch['total_size'] = len(examples)
+		batch_size = len(relations)
+		neg_size = 2 * (len(relations) - 1)
+		sample_size = neg_size + 1
+		max_seq_len = tokenizer_batch['input_ids'].shape[1]
+		batch = {
+			'input_ids': tokenizer_batch['input_ids'].view(batch_size, sample_size, max_seq_len),
+			'attention_mask': tokenizer_batch['input_ids'].view(batch_size, sample_size, max_seq_len)
+		}
 
 		return batch
