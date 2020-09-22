@@ -20,7 +20,7 @@ if __name__ == "__main__":
 	data_folder = 'data'
 	save_directory = 'models'
 	log_directory = 'logs'
-	model_name = 'umls-kbilm-v2'
+	model_name = 'umls-kbilm-v3'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	batch_size = 8
 	weight_decay = 0.01
@@ -30,6 +30,7 @@ if __name__ == "__main__":
 	max_seq_len = 64
 	dev_log_frequency = 10
 	grad_norm_clip = 1.0
+	gpu_id = 4
 
 	random.seed(seed)
 	torch.manual_seed(seed)
@@ -59,7 +60,7 @@ if __name__ == "__main__":
 
 	if torch.cuda.is_available():
 		device = torch.device("cuda")
-		logging.info(f"Using GPU{torch.cuda.get_device_name(0)}")
+		logging.info(f"Using GPU{torch.cuda.get_device_name(gpu_id)}")
 	else:
 		device = torch.device("cpu")
 		logging.info(f"Using CPU")
