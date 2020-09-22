@@ -34,7 +34,7 @@ if __name__ == "__main__":
 	# accumulate_grad_batches = 4
 	precision = 32
 	gpus = [4, 5, 6, 7]
-	use_tpus = False
+	use_tpus = True
 	tpu_cores = 8
 	num_workers = 1
 
