@@ -13,7 +13,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		self.gamma = gamma
 		self.learning_rate = learning_rate
 		self.weight_decay = weight_decay
-		self.save_hyperparameters()
+		# self.save_hyperparameters('gamma', 'learning_rate', 'weight_decay')
 
 	def forward(self, input_ids, attention_mask):
 		batch_size, sample_size, max_seq_len = input_ids.shape
