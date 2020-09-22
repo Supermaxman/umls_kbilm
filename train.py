@@ -74,10 +74,10 @@ if __name__ == "__main__":
 
 	logging.info('Loading dataset...')
 
-	_, _, relations = load_umls(umls_directory, data_folder)
-	train_data, val_data, _ = split_data(relations)
-	train_dataset = UmlsRelationDataset(train_data)
-	val_dataset = UmlsRelationDataset(val_data)
+	# _, _, relations = load_umls(umls_directory, data_folder)
+	# train_data, val_data, _ = split_data(relations)
+	# train_dataset = UmlsRelationDataset(train_data)
+	# val_dataset = UmlsRelationDataset(val_data)
 
 	# train_dataloader = DataLoader(
 	# 	train_dataset,
