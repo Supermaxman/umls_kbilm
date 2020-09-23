@@ -45,8 +45,10 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		neg_energies = energies[:, 1:]
 		with torch.no_grad():
 			neg_probs = nn.Softmax(dim=1)(self.adv_temp * -neg_energies)
-		pos_loss = -nn.LogSigmoid()(self.gamma - pos_energies)
-		neg_loss = -neg_probs * nn.LogSigmoid()(neg_energies - self.gamma)
+
+		epsilon = 1e-6
+		pos_loss = -torch.log(torch.sigmoid(self.gamma - pos_energies) + epsilon)
+		neg_loss = -neg_probs * torch.log(torch.sigmoid(neg_energies - self.gamma) + epsilon)
 		neg_loss = neg_loss.sum(dim=1)
 		batch_loss = pos_loss + neg_loss
 		loss = batch_loss.mean()
