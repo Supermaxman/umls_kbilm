@@ -18,12 +18,12 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v39'
+	model_name = 'umls-kbilm-v40'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	learning_rate = 1e-4
+	learning_rate = 1e-5
 	epochs = 10
 	#  {3, 6, 9, 12, 18, 24, 30}
-	gamma = 6.0
+	gamma = 24.0
 	#  {0.5, 1.0}
 	adv_temp = 0.5
 	gradient_clip_val = 1.0
