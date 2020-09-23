@@ -18,29 +18,29 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v40'
+	model_name = 'umls-kbilm-v42'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	learning_rate = 1e-5
 	epochs = 10
 	#  {3, 6, 9, 12, 18, 24, 30}
 	gamma = 24.0
 	#  {0.5, 1.0}
-	adv_temp = 0.5
+	adv_temp = 1.0
 	gradient_clip_val = 1.0
 	weight_decay = 0.01
 	max_seq_len = 64
 	val_check_interval = 0.50
-	is_distributed = True
+	is_distributed = False
 	# export TPU_IP_ADDRESS=10.155.6.34
 	# export XRT_TPU_CONFIG="tpu_worker;0;$TPU_IP_ADDRESS:8470"
 	# batch_size = 64
-	batch_size = 4
+	batch_size = 8
 	negative_sample_size = 16
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
 	precision = 32
 	# gpus = [4, 5, 6, 7]
-	gpus = [4, 5, 6, 7]
+	gpus = [4]
 	use_tpus = False
 	tpu_cores = 8
 	num_workers = 1
@@ -77,20 +77,24 @@ if __name__ == "__main__":
 
 	logging.info('Loading collator...')
 	example_creator = NameRelationExampleCreator()
-	train_neg_sampler = UniformNegativeSampler(
-		concept_list,
-		negative_sample_size,
-		shuffle=True,
-		seed=seed,
-		train_callback=True
+	train_neg_sampler = BatchNegativeSampler(
+		negative_sample_size
 	)
-	val_neg_sampler = UniformNegativeSampler(
-		concept_list,
-		negative_sample_size,
-		shuffle=False,
-		seed=seed,
-		val_callback=True
-	)
+	val_neg_sampler = train_neg_sampler
+	# train_neg_sampler = UniformNegativeSampler(
+	# 	concept_list,
+	# 	negative_sample_size,
+	# 	shuffle=True,
+	# 	seed=seed,
+	# 	train_callback=True
+	# )
+	# val_neg_sampler = UniformNegativeSampler(
+	# 	concept_list,
+	# 	negative_sample_size,
+	# 	shuffle=False,
+	# 	seed=seed,
+	# 	val_callback=True
+	# )
 	# neg_sampler = BatchNegativeSampler(
 	# 	negative_sample_size
 	# )
@@ -144,10 +148,10 @@ if __name__ == "__main__":
 			precision=precision,
 			val_check_interval=val_check_interval,
 			deterministic=deterministic,
-			callbacks=[
-				train_neg_sampler,
-				val_neg_sampler
-			]
+			# callbacks=[
+			# 	train_neg_sampler,
+			# 	val_neg_sampler
+			# ]
 		)
 	else:
 		if len(gpus) > 1:

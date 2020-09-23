@@ -32,7 +32,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		# energies = self.energy_linear(cls_embeddings)
 		# [total_size]
 		# l1 norm
-		energies = torch.abs(cls_embeddings).sum(dim=1)
+		energies = torch.norm(cls_embeddings, p=1, dim=1)
 		# [batch_size, sample_size]
 		energies = energies.view(batch_size, sample_size)
 

@@ -33,15 +33,15 @@ class BatchNegativeSampler(NegativeRelationSampler):
 		for other_rel in batch_relations:
 			if other_rel != pos_relation:
 				neg_rel_subj = Relation(subj=other_rel.subj, rel_type=pos_relation.rel_type, obj=pos_relation.obj)
-				neg_rel_obj = Relation(subj=pos_relation.subj, rel_type=pos_relation.rel_type, obj=other_rel.obj)
-				if num_samples >= self.negative_sample_size:
-					break
 				num_samples += 1
 				yield neg_rel_subj
 				if num_samples >= self.negative_sample_size:
 					break
+				neg_rel_obj = Relation(subj=pos_relation.subj, rel_type=pos_relation.rel_type, obj=other_rel.obj)
 				num_samples += 1
 				yield neg_rel_obj
+				if num_samples >= self.negative_sample_size:
+					break
 
 
 class UniformNegativeSampler(NegativeRelationSampler):
