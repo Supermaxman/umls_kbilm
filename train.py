@@ -18,7 +18,7 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v4'
+	model_name = 'umls-kbilm-v3'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	learning_rate = 1e-5
 	epochs = 10
@@ -78,26 +78,26 @@ if __name__ == "__main__":
 	callbacks = []
 	logging.info('Loading collator...')
 	example_creator = NameRelationExampleCreator()
-	train_neg_sampler = BatchNegativeSampler(
-		negative_sample_size
+	# train_neg_sampler = BatchNegativeSampler(
+	# 	negative_sample_size
+	# )
+	# val_neg_sampler = train_neg_sampler
+	train_neg_sampler = UniformNegativeSampler(
+		concept_list,
+		negative_sample_size,
+		shuffle=True,
+		seed=seed,
+		train_callback=True
 	)
-	val_neg_sampler = train_neg_sampler
-	# train_neg_sampler = UniformNegativeSampler(
-	# 	concept_list,
-	# 	negative_sample_size,
-	# 	shuffle=True,
-	# 	seed=seed,
-	# 	train_callback=True
-	# )
-	# callbacks.append(train_neg_sampler)
-	# val_neg_sampler = UniformNegativeSampler(
-	# 	concept_list,
-	# 	negative_sample_size,
-	# 	shuffle=False,
-	# 	seed=seed,
-	# 	val_callback=True
-	# )
-	# callbacks.append(val_neg_sampler)
+	callbacks.append(train_neg_sampler)
+	val_neg_sampler = UniformNegativeSampler(
+		concept_list,
+		negative_sample_size,
+		shuffle=False,
+		seed=seed,
+		val_callback=True
+	)
+	callbacks.append(val_neg_sampler)
 	tokenizer = BertTokenizer.from_pretrained(pre_model_name)
 	# ensure negative_sample_size is correct based on batch_size
 	train_collator = RelationCollator(
