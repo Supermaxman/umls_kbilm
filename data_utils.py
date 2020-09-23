@@ -273,7 +273,7 @@ class RelationCollator(object):
 		max_seq_len = tokenizer_batch['input_ids'].shape[1]
 		batch = {
 			'input_ids': tokenizer_batch['input_ids'].view(batch_size, sample_size, max_seq_len),
-			'attention_mask': tokenizer_batch['input_ids'].view(batch_size, sample_size, max_seq_len)
+			'attention_mask': tokenizer_batch['attention_mask'].view(batch_size, sample_size, max_seq_len)
 		}
 
 		return batch
