@@ -75,12 +75,13 @@ class UniformNegativeSampler(NegativeRelationSampler):
 			rank = dist.get_rank()
 			num_replicas = dist.get_world_size()
 		except AssertionError:
-			print('----------------')
-			print(os.environ['XRT_SHARD_ORDINAL'])
-			print(os.environ['XRT_SHARD_WORLD_SIZE'])
-			print('----------------')
-			rank = int(os.environ['XRT_SHARD_ORDINAL'])
-			num_replicas = int(os.environ['XRT_SHARD_WORLD_SIZE'])
+			try:
+				rank = int(os.environ['XRT_SHARD_ORDINAL'])
+				num_replicas = int(os.environ['XRT_SHARD_WORLD_SIZE'])
+			except ValueError:
+				rank = 0
+				num_replicas = 1
+				print('No process group initialized, using default seed...')
 
 		# subsample concepts for rank specific negative sampling
 		self.concepts = self.concepts[rank::num_replicas]
