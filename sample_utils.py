@@ -2,10 +2,11 @@ from abc import ABC, abstractmethod
 import random
 from typing import List
 import numpy as np
-import torch.distributed as dist
 import math
 import torch
 import pytorch_lightning as pl
+import torch.distributed as dist
+import os
 
 from umls_reader import read_umls
 from umls import UmlsAtom, UmlsRelation
@@ -73,15 +74,21 @@ class UniformNegativeSampler(NegativeRelationSampler):
 		try:
 			rank = dist.get_rank()
 			num_replicas = dist.get_world_size()
-			# subsample concepts for rank specific negative sampling
-			self.concepts = self.concepts[rank::num_replicas]
-			if self.shuffle:
-				g = torch.Generator()
-				g.manual_seed(hash((self.seed, self.epoch, rank)))
-				indices = torch.randperm(len(self.concepts), generator=g).tolist()
-				self.concepts = self.concepts[indices]
-		except RuntimeError as e:
-			print(e)
+		except AssertionError:
+			print('----------------')
+			print(os.environ['XRT_SHARD_ORDINAL'])
+			print(os.environ['XRT_SHARD_WORLD_SIZE'])
+			print('----------------')
+			rank = int(os.environ['XRT_SHARD_ORDINAL'])
+			num_replicas = int(os.environ['XRT_SHARD_WORLD_SIZE'])
+
+		# subsample concepts for rank specific negative sampling
+		self.concepts = self.concepts[rank::num_replicas]
+		if self.shuffle:
+			g = torch.Generator()
+			g.manual_seed(hash((self.seed, self.epoch, rank)))
+			indices = torch.randperm(len(self.concepts), generator=g).tolist()
+			self.concepts = self.concepts[indices]
 
 	def on_train_epoch_start(self, trainer: pl.Trainer, pl_module):
 		if self.train_callback:
