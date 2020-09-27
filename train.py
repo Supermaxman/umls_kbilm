@@ -9,7 +9,7 @@ from torch.utils.data.distributed import DistributedSampler
 from model_utils import KnowledgeBaseInfusedBert
 from data_utils import RelationCollator, UmlsRelationDataset, load_umls, split_data
 from kb_utils import NameRelationExampleCreator
-from sample_utils import UniformNegativeSampler, BatchNegativeSampler
+from sample_utils import UniformNegativeSampler
 
 
 if __name__ == "__main__":
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
 	train_dataset = UmlsRelationDataset(
 		relations=train_data,
-		concepts=concepts,
+		concepts=concept_list,
 		example_creator=example_creator,
 		tokenizer=tokenizer,
 		sampler=train_neg_sampler,
@@ -98,7 +98,7 @@ if __name__ == "__main__":
 	)
 	val_dataset = UmlsRelationDataset(
 		relations=val_data,
-		concepts=concepts,
+		concepts=concept_list,
 		example_creator=example_creator,
 		tokenizer=tokenizer,
 		sampler=val_neg_sampler,
