@@ -1,55 +1,64 @@
 
-import torch
-import numpy as np
-import random
-from torch.utils.data import DataLoader
-from transformers import BertTokenizer, BertConfig, AdamW
-from tqdm import tqdm
+from transformers import BertTokenizer
 import os
-from tensorboardX import SummaryWriter
 import logging
+import pytorch_lightning as pl
+from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 
 from model_utils import KnowledgeBaseInfusedBert
-from data_utils import RelationCollator, UmlsRelationDataset, load_umls, split_data, get_optimizer_params
+from data_utils import RelationCollator, UmlsRelationDataset, load_umls, split_data
 from kb_utils import NameRelationExampleCreator
+from sample_utils import UniformNegativeSampler, BatchNegativeSampler
 
 
 if __name__ == "__main__":
+	# TODO parameterize below into config file for reproducibility
 	seed = 0
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	log_directory = 'logs'
 	model_name = 'umls-kbilm-v3'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
-	batch_size = 8
-	weight_decay = 0.01
 	learning_rate = 1e-5
-	epochs = 100
+	epochs = 10
+	#  {3, 6, 9, 12, 18, 24, 30}
 	gamma = 24.0
+	#  {0.5, 1.0}
+	adv_temp = 1.0
+	gradient_clip_val = 1.0
+	weight_decay = 0.01
 	max_seq_len = 64
-	dev_log_frequency = 10
-	grad_norm_clip = 1.0
-	gpu_id = 4
+	val_check_interval = 0.50
+	is_distributed = True
+	# export TPU_IP_ADDRESS=10.155.6.34
+	# export XRT_TPU_CONFIG="tpu_worker;0;$TPU_IP_ADDRESS:8470"
+	# batch_size = 64
+	batch_size = 8
+	negative_sample_size = 16
+	accumulate_grad_batches = 1
+	# accumulate_grad_batches = 4
+	gpus = [4, 5, 6, 7]
+	# gpus = [4]
+	use_tpus = False
+	precision = 16 if use_tpus else 32
+	tpu_cores = 8
+	num_workers = 1
+	deterministic = True
 
-	random.seed(seed)
-	torch.manual_seed(seed)
-	np.random.seed(seed)
+	pl.seed_everything(seed)
 
 	save_directory = os.path.join(save_directory, model_name)
-	log_directory = os.path.join(log_directory, model_name)
 
 	if not os.path.exists(save_directory):
 		os.mkdir(save_directory)
-	if not os.path.exists(log_directory):
-		os.mkdir(log_directory)
 
 	# Also add the stream handler so that it logs on STD out as well
 	# Ref: https://stackoverflow.com/a/46098711/4535284
 	for handler in logging.root.handlers[:]:
 		logging.root.removeHandler(handler)
 
-	logfile = os.path.join(log_directory, "train_output.log")
+	logfile = os.path.join(save_directory, "train_output.log")
 	logging.basicConfig(
 		level=logging.INFO,
 		format="%(asctime)s [%(levelname)s] %(message)s",
@@ -58,192 +67,111 @@ if __name__ == "__main__":
 			logging.StreamHandler()]
 	)
 
-	if torch.cuda.is_available():
-		device = torch.device("cuda")
-		logging.info(f"Using GPU{torch.cuda.get_device_name(gpu_id)}")
-	else:
-		device = torch.device("cpu")
-		logging.info(f"Using CPU")
+	logging.info('Loading dataset...')
 
-	logging.info('Loading umls dataset')
 	concepts, relation_types, relations = load_umls(umls_directory, data_folder)
-
-	logging.info('Loading model')
-	tokenizer = BertTokenizer.from_pretrained(pre_model_name)
-	config = BertConfig.from_pretrained(pre_model_name)
-	config.batch_size = batch_size
-	config.weight_decay = weight_decay
-	config.learning_rate = learning_rate
-	config.epochs = epochs
-	config.gamma = gamma
-	config.max_seq_len = max_seq_len
-	config.model_name = model_name
-	config.pre_model_name = pre_model_name
-	config.seed = seed
-	config.grad_norm_clip = grad_norm_clip
-
-	model = KnowledgeBaseInfusedBert.from_pretrained(pre_model_name, config=config)
-	model.to(device)
-
-	train_data, dev_data, test_data = split_data(relations)
-	logging.info(f'Train data size: {len(train_data)}')
-	logging.info(f'Dev data size: {len(dev_data)}')
-	logging.info(f'Test data size: {len(test_data)}')
-
+	concept_list = list(concepts.values())
+	train_data, val_data, _ = split_data(relations)
 	train_dataset = UmlsRelationDataset(train_data)
-	dev_dataset = UmlsRelationDataset(dev_data)
-	test_dataset = UmlsRelationDataset(test_data)
+	val_dataset = UmlsRelationDataset(val_data)
 
+	callbacks = []
+	logging.info('Loading collator...')
 	example_creator = NameRelationExampleCreator()
-	collator = RelationCollator(tokenizer, example_creator, max_seq_len)
-
+	# train_neg_sampler = BatchNegativeSampler(
+	# 	negative_sample_size
+	# )
+	# val_neg_sampler = train_neg_sampler
+	train_neg_sampler = UniformNegativeSampler(
+		concept_list,
+		negative_sample_size,
+		shuffle=True,
+		seed=seed,
+		train_callback=True
+	)
+	callbacks.append(train_neg_sampler)
+	val_neg_sampler = UniformNegativeSampler(
+		concept_list,
+		negative_sample_size,
+		shuffle=False,
+		seed=seed,
+		val_callback=True
+	)
+	callbacks.append(val_neg_sampler)
+	tokenizer = BertTokenizer.from_pretrained(pre_model_name)
+	# ensure negative_sample_size is correct based on batch_size
+	train_collator = RelationCollator(
+		tokenizer,
+		example_creator,
+		train_neg_sampler,
+		max_seq_len,
+		force_max_seq_len=use_tpus
+	)
 	train_dataloader = DataLoader(
 		train_dataset,
 		batch_size=batch_size,
 		shuffle=True,
-		num_workers=1,
-		collate_fn=collator
+		num_workers=num_workers,
+		collate_fn=train_collator
 	)
-	dev_dataloader = DataLoader(
-		dev_dataset,
+
+	val_collator = RelationCollator(
+		tokenizer,
+		example_creator,
+		val_neg_sampler,
+		max_seq_len,
+		force_max_seq_len=use_tpus
+	)
+	val_dataloader = DataLoader(
+		val_dataset,
 		batch_size=batch_size,
-		shuffle=False,
-		num_workers=1,
-		collate_fn=collator
-	)
-	test_dataloader = DataLoader(
-		test_dataset,
-		batch_size=batch_size,
-		shuffle=False,
-		num_workers=1,
-		collate_fn=collator
-	)
-	params = get_optimizer_params(model, weight_decay)
-	# TODO get warm up / decay schedule code
-	optimizer = AdamW(
-		params,
-		lr=learning_rate,
-		weight_decay=weight_decay,
-		correct_bias=False
+		num_workers=num_workers,
+		collate_fn=val_collator
 	)
 
-	writer = SummaryWriter(log_directory)
-	for epoch in range(epochs):
-		pbar = tqdm(train_dataloader)
-		logging.info(f"Initiating Epoch {epoch + 1}:")
-		# Reset the total loss for each epoch.
-		total_train_loss = 0.0
+	logging.info('Loading model...')
+	model = KnowledgeBaseInfusedBert(
+		pre_model_name=pre_model_name,
+		gamma=gamma,
+		adv_temp=adv_temp,
+		learning_rate=learning_rate,
+		weight_decay=weight_decay
+	)
 
-		# Reset timer for each epoch
-		model.train()
+	logging.info('Training...')
+	if use_tpus:
+		logging.warning('Gradient clipping slows down TPU training drastically, disabled for now.')
+		trainer = pl.Trainer(
+			tpu_cores=tpu_cores,
+			default_root_dir=save_directory,
+			max_epochs=epochs,
+			precision=precision,
+			val_check_interval=val_check_interval,
+			deterministic=deterministic,
+			callbacks=callbacks
+		)
+	else:
+		if len(gpus) > 1:
+			backend = 'ddp' if is_distributed else 'dp'
+		else:
+			backend = None
+		trainer = pl.Trainer(
+			gpus=gpus,
+			default_root_dir=save_directory,
+			max_epochs=epochs,
+			precision=precision,
+			val_check_interval=val_check_interval,
+			distributed_backend=backend,
+			gradient_clip_val=gradient_clip_val,
+			deterministic=deterministic,
+			callbacks=[
+				train_neg_sampler,
+				val_neg_sampler
+			]
+		)
+	trainer.fit(model, train_dataloader, val_dataloader)
 
-		n_steps = len(train_dataloader)
-		dev_steps = int(n_steps / dev_log_frequency)
-		for step, batch in enumerate(pbar):
-			if step == 0:
-				logging.info(f'pos_size={batch["pos_size"]}')
-				logging.info(f'neg_size={batch["neg_size"]}')
-				logging.info(f'total_size={batch["total_size"]}')
-				logging.info(f'input_ids={batch["input_ids"].shape}')
-			# Forward
-			input_dict = {
-				"input_ids": batch["input_ids"].to(device),
-				"attention_mask": batch["attention_mask"].to(device),
-				"pos_size": batch["pos_size"],
-				"neg_size": batch["neg_size"],
-				"total_size": batch["total_size"],
-			}
-
-			results = model(**input_dict)
-			loss = results['loss']
-			# loss = loss / accumulation_steps
-			# Accumulate loss
-			loss_value = loss.item()
-			pos_exp_acc = results['pos_exp_correct'].item() / batch["pos_size"]
-			pos_uniform_acc = results['pos_uniform_correct'].item() / (2 * batch["pos_size"])
-			total_train_loss += loss_value
-
-			# Backward: compute gradients
-			loss.backward()
-
-			avg_train_loss = total_train_loss / (step + 1)
-
-			pbar.set_description(f"Epoch:{epoch + 1}|Batch:{step}/{len(train_dataloader)}|Avg. Loss:{avg_train_loss:.4f}|Loss:{loss_value:.4f}")
-			writer.add_scalar('train/train_loss', loss_value, step)
-			writer.add_scalar('train/train_exp_acc', pos_exp_acc, step)
-			writer.add_scalar('train/train_uniform_acc', pos_uniform_acc, step)
-			# Clip the norm of the gradients to 1.0.
-			# This is to help prevent the "exploding gradients" problem.
-			torch.nn.utils.clip_grad_norm_(model.parameters(), grad_norm_clip)
-
-			# Update parameters
-			optimizer.step()
-
-			# Clean the model's previous gradients
-			model.zero_grad()  # Reset gradients tensors
-
-			# Update the learning rate.
-			# scheduler.step()
-			pbar.update()
-			if (step + 1) % dev_steps == 0:
-				# Perform validation with the model and log the performance
-				logging.info("Running Validation...")
-				# Put the model in evaluation mode--the dropout layers behave differently
-				# during evaluation.
-				model.eval()
-				dev_pbar = tqdm(dev_dataloader)
-				total_count = 0
-				total_exp_correct = 0.0
-				total_subj_uni_correct = 0.0
-				total_obj_uni_correct = 0.0
-				total_dev_loss = 0.0
-				with torch.no_grad():
-					for _, dev_batch in enumerate(dev_pbar):
-						# Create testing instance for model
-						input_dict = {
-							"input_ids": dev_batch["input_ids"].to(device),
-							"attention_mask": dev_batch["attention_mask"].to(device),
-							"pos_size": dev_batch["pos_size"],
-							"neg_size": dev_batch["neg_size"],
-							"total_size": dev_batch["total_size"],
-						}
-						# dev_loss [pos_size]
-						# dev_pos_energy [pos_size]
-						# dev_neg_energy [pos_size, neg_size]
-						# dev_neg_probs [pos_size, neg_size]
-						dev_results = model(**input_dict)
-						total_count += dev_batch["pos_size"]
-						total_dev_loss += dev_results['batch_loss'].sum().item()
-						total_exp_correct += dev_results['pos_exp_correct'].item()
-						# first neg example replaces subj
-						total_subj_uni_correct += dev_results['pos_subj_uniform_correct'].item()
-						# second neg example replaces obj
-						dev_obj_uniform_correct = dev_results['pos_obj_uniform_correct'].item()
-						total_obj_uni_correct += dev_obj_uniform_correct
-
-				dev_subj_uni_acc = total_subj_uni_correct / total_count
-				dev_obj_uni_acc = total_obj_uni_correct / total_count
-				dev_uni_acc = (total_subj_uni_correct + total_obj_uni_correct) / (2 * total_count)
-				dev_exp_acc = total_exp_correct / total_count
-				dev_loss = total_dev_loss / total_count
-				writer.add_scalar('dev/dev_loss', dev_loss, step)
-				writer.add_scalar('dev/dev_exp_acc', dev_exp_acc, step)
-				writer.add_scalar('dev/dev_uniform_acc', dev_uni_acc, step)
-				writer.add_scalar('dev/dev_subj_uniform_acc', dev_subj_uni_acc, step)
-				writer.add_scalar('dev/dev_obj_uniform_acc', dev_obj_uni_acc, step)
-
-				logging.info(f"DEV:\tLoss={dev_loss:.4f}\tExpected Accuracy={dev_exp_acc:.4f}\tUniform Accuracy={dev_uni_acc:.4f}")
-				logging.info('Saving model...')
-				config.save_pretrained(save_directory)
-				model.save_pretrained(save_directory)
-				tokenizer.save_pretrained(save_directory)
-				# Put the model back in train setting
-				model.train()
-
-		# Calculate the average loss over all of the batches.
-		avg_train_loss = total_train_loss / len(train_dataloader)
-	config.save_pretrained(save_directory)
-	model.save_pretrained(save_directory)
-	tokenizer.save_pretrained(save_directory)
-	writer.close()
+	# TODO eval on test
+	# logging.info('Evaluating...')
+	# trainer.test(datamodule=dm)
 

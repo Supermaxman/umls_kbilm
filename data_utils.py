@@ -5,10 +5,14 @@ from tqdm import tqdm
 import pickle
 import random
 import logging
+from torch.utils.data import DataLoader
+import pytorch_lightning as pl
+import torch.distributed as dist
 
 from umls_reader import read_umls
 from umls import UmlsAtom, UmlsRelation
 from kb_utils import RelationType, Concept, Relation, RelationExampleCreator
+from sample_utils import NegativeRelationSampler
 
 
 def load_rel_merge_mapping(filepath):
@@ -229,39 +233,47 @@ class UmlsRelationDataset(Dataset):
 
 
 class RelationCollator(object):
-	def __init__(self, tokenizer, example_creator: RelationExampleCreator, max_seq_len: int):
+	def __init__(
+			self, tokenizer, example_creator: RelationExampleCreator, neg_sampler: NegativeRelationSampler,
+			max_seq_len: int, force_max_seq_len: bool):
+		super().__init__()
 		self.tokenizer = tokenizer
 		self.example_creator = example_creator
+		self.neg_sampler = neg_sampler
 		self.max_seq_len = max_seq_len
+		self.force_max_seq_len = force_max_seq_len
 
 	def __call__(self, relations):
 		# creates text examples
+		batch_negative_sample_size = None
+		examples = []
+		for pos_rel in relations:
+			pos_example = self.example_creator.create(pos_rel)
+			examples.append(pos_example)
+			num_samples = 0
+			for neg_rel in self.neg_sampler.sample(pos_rel, relations):
+				neg_example = self.example_creator.create(neg_rel)
+				examples.append(neg_example)
+				num_samples += 1
+			if batch_negative_sample_size is None:
+				batch_negative_sample_size = num_samples
 
-		pos_examples = []
-		neg_examples = []
-		for rel in relations:
-			pos_example = self.example_creator.create(rel)
-			pos_examples.append(pos_example)
-			for other_rel in relations:
-				if other_rel != rel:
-					neg_rel_subj = Relation(subj=other_rel.subj, rel_type=rel.rel_type, obj=rel.obj)
-					neg_rel_subj_example = self.example_creator.create(neg_rel_subj)
-					neg_rel_obj = Relation(subj=rel.subj, rel_type=rel.rel_type, obj=other_rel.obj)
-					neg_rel_obj_example = self.example_creator.create(neg_rel_obj)
-					neg_examples.append(neg_rel_subj_example)
-					neg_examples.append(neg_rel_obj_example)
-		examples = pos_examples + neg_examples
-
-		batch = self.tokenizer.batch_encode_plus(
+		# "input_ids": batch["input_ids"].to(device),
+		# "attention_mask": batch["attention_mask"].to(device),
+		tokenizer_batch = self.tokenizer.batch_encode_plus(
 			batch_text_or_text_pairs=examples,
 			add_special_tokens=True,
-			padding=True,
+			padding='max_length' if self.force_max_seq_len else 'longest',
 			return_tensors='pt',
 			truncation=True,
 			max_length=self.max_seq_len
 		)
-		batch['pos_size'] = len(relations)
-		batch['neg_size'] = len(neg_examples) // len(relations)
-		batch['total_size'] = len(examples)
+		batch_size = len(relations)
+		sample_size = batch_negative_sample_size + 1
+		max_seq_len = tokenizer_batch['input_ids'].shape[1]
+		batch = {
+			'input_ids': tokenizer_batch['input_ids'].view(batch_size, sample_size, max_seq_len),
+			'attention_mask': tokenizer_batch['attention_mask'].view(batch_size, sample_size, max_seq_len)
+		}
 
 		return batch
