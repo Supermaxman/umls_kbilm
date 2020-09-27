@@ -68,65 +68,57 @@ if __name__ == "__main__":
 	)
 
 	logging.info('Loading dataset...')
-
 	concepts, relation_types, relations = load_umls(umls_directory, data_folder)
 	concept_list = list(concepts.values())
 	train_data, val_data, _ = split_data(relations)
-	train_dataset = UmlsRelationDataset(train_data)
-	val_dataset = UmlsRelationDataset(val_data)
 
 	callbacks = []
-	logging.info('Loading collator...')
 	example_creator = NameRelationExampleCreator()
-	# train_neg_sampler = BatchNegativeSampler(
-	# 	negative_sample_size
-	# )
-	# val_neg_sampler = train_neg_sampler
+
 	train_neg_sampler = UniformNegativeSampler(
-		concept_list,
-		negative_sample_size,
-		shuffle=True,
 		seed=seed,
 		train_callback=True
 	)
 	callbacks.append(train_neg_sampler)
 	val_neg_sampler = UniformNegativeSampler(
-		concept_list,
-		negative_sample_size,
-		shuffle=False,
 		seed=seed,
 		val_callback=True
 	)
 	callbacks.append(val_neg_sampler)
 	tokenizer = BertTokenizer.from_pretrained(pre_model_name)
-	# ensure negative_sample_size is correct based on batch_size
-	train_collator = RelationCollator(
-		tokenizer,
-		example_creator,
-		train_neg_sampler,
-		max_seq_len,
-		force_max_seq_len=use_tpus
+
+	train_dataset = UmlsRelationDataset(
+		relations=train_data,
+		concepts=concepts,
+		example_creator=example_creator,
+		tokenizer=tokenizer,
+		sampler=train_neg_sampler,
+		negative_sample_size=negative_sample_size,
+		max_seq_len=max_seq_len
 	)
+	val_dataset = UmlsRelationDataset(
+		relations=val_data,
+		concepts=concepts,
+		example_creator=example_creator,
+		tokenizer=tokenizer,
+		sampler=val_neg_sampler,
+		negative_sample_size=negative_sample_size,
+		max_seq_len=max_seq_len
+	)
+
 	train_dataloader = DataLoader(
 		train_dataset,
 		batch_size=batch_size,
 		shuffle=True,
 		num_workers=num_workers,
-		collate_fn=train_collator
+		# collate_fn=train_collator
 	)
 
-	val_collator = RelationCollator(
-		tokenizer,
-		example_creator,
-		val_neg_sampler,
-		max_seq_len,
-		force_max_seq_len=use_tpus
-	)
 	val_dataloader = DataLoader(
 		val_dataset,
 		batch_size=batch_size,
 		num_workers=num_workers,
-		collate_fn=val_collator
+		# collate_fn=val_collator
 	)
 
 	logging.info('Loading model...')

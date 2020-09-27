@@ -217,8 +217,15 @@ def get_optimizer_params(model, weight_decay):
 
 
 class UmlsRelationDataset(Dataset):
-	def __init__(self, relations):
+	def __init__(self, relations, concepts, example_creator, tokenizer, sampler, negative_sample_size, max_seq_len):
 		self.relations = relations
+		self.concepts = concepts
+		self.example_creator = example_creator
+		self.tokenizer = tokenizer
+		self.sampler = sampler
+		self.negative_sample_size = negative_sample_size
+		self.max_seq_len = max_seq_len
+		self.relations_set = set(relations)
 
 	def __len__(self):
 		return len(self.relations)
@@ -227,9 +234,32 @@ class UmlsRelationDataset(Dataset):
 		if torch.is_tensor(idx):
 			idx = idx.tolist()
 
-		relation = self.relations[idx]
+		examples = []
+		pos_relation = self.relations[idx]
 
-		return relation
+		examples.append(self.example_creator.create(pos_relation))
+
+		negative_examples = []
+		while len(negative_examples) < self.negative_sample_size:
+			neg_relation = self.sampler.sample(pos_relation, self.concepts)
+			if neg_relation not in self.relations_set:
+				negative_examples.append(self.example_creator(neg_relation))
+
+		examples.extend(negative_examples)
+		tokenizer_batch = self.tokenizer.batch_encode_plus(
+			batch_text_or_text_pairs=examples,
+			add_special_tokens=True,
+			padding='max_length',
+			return_tensors='pt',
+			truncation=True,
+			max_length=self.max_seq_len
+		)
+		example = {
+			'input_ids': tokenizer_batch['input_ids'],
+			'attention_mask': tokenizer_batch['attention_mask']
+		}
+
+		return example
 
 
 class RelationCollator(object):
