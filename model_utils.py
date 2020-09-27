@@ -94,10 +94,6 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 			weight_decay=self.weight_decay,
 			correct_bias=False
 		)
-		# optimizer = torch.optim.Adam(
-		# 	self.parameters(),
-		# 	lr=self.learning_rate
-		# )
 		return optimizer
 
 	def _get_optimizer_params(self, weight_decay):

@@ -38,10 +38,10 @@ if __name__ == "__main__":
 	negative_sample_size = 16
 	accumulate_grad_batches = 1
 	# accumulate_grad_batches = 4
-	precision = 32
 	gpus = [4, 5, 6, 7]
 	# gpus = [4]
 	use_tpus = False
+	precision = 16 if use_tpus else 32
 	tpu_cores = 8
 	num_workers = 1
 	deterministic = True
