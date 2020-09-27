@@ -243,7 +243,7 @@ class UmlsRelationDataset(Dataset):
 		while len(negative_examples) < self.negative_sample_size:
 			neg_relation = self.sampler.sample(pos_relation, self.concepts)
 			if neg_relation not in self.relations_set:
-				negative_examples.append(self.example_creator(neg_relation))
+				negative_examples.append(self.example_creator.create(neg_relation))
 
 		examples.extend(negative_examples)
 		tokenizer_batch = self.tokenizer.batch_encode_plus(
