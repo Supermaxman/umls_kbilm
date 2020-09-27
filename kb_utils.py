@@ -12,6 +12,9 @@ class Concept(object):
 	def __repr__(self):
 		return str(self)
 
+	def __hash__(self):
+		return hash(self.concept_id)
+
 	def __eq__(self, other):
 		if not isinstance(other, Concept):
 			return False
@@ -28,6 +31,9 @@ class RelationType(object):
 
 	def __repr__(self):
 		return str(self)
+
+	def __hash__(self):
+		return hash(self.relation_id)
 
 	def __eq__(self, other):
 		if not isinstance(other, RelationType):
