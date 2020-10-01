@@ -72,8 +72,8 @@ if __name__ == "__main__":
 
 	concepts, relation_types, relations = load_umls(umls_directory, data_folder)
 
-	logging.warning('Testing system with only 1000 examples!!!')
-	relations = relations[:1000]
+	# logging.warning('Testing system with only 1000 examples!!!')
+	# relations = relations[:1000]
 	concept_list = list(concepts.values())
 	train_data, val_data, _ = split_data(relations)
 	train_relations_set = set(train_data)
