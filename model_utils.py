@@ -93,12 +93,14 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		return result
 
 	def validation_end(self, outputs):
-		loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-		exp_acc = torch.stack([x['val_exp_acc'] for x in outputs]).mean()
-		uniform_acc = torch.stack([x['val_uniform_acc'] for x in outputs]).mean()
+		loss = torch.cat([x['val_loss'] for x in outputs], dim=0).mean()
+		exp_acc = torch.cat([x['val_exp_acc'] for x in outputs], dim=0).mean()
+		uniform_acc = torch.cat([x['val_uniform_acc'] for x in outputs], dim=0).mean()
 
 		result = {
 			'val_loss': loss,
+			'val_exp_acc': exp_acc,
+			'val_uniform_acc': uniform_acc,
 			'log': {
 				'val_loss': loss,
 				'val_exp_acc': exp_acc,

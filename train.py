@@ -19,7 +19,7 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v6'
+	model_name = 'umls-kbilm-t1'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	learning_rate = 1e-5
 	epochs = 2
@@ -71,6 +71,9 @@ if __name__ == "__main__":
 	logging.info('Loading dataset...')
 
 	concepts, relation_types, relations = load_umls(umls_directory, data_folder)
+
+	logging.warning('Testing system with only 1000 examples!!!')
+	relations = relations[:1000]
 	concept_list = list(concepts.values())
 	train_data, val_data, _ = split_data(relations)
 	train_relations_set = set(train_data)
