@@ -5,6 +5,7 @@ import logging
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 from model_utils import KnowledgeBaseInfusedBert
 from data_utils import RelationCollator, UmlsRelationDataset, load_umls, split_data
@@ -18,10 +19,10 @@ if __name__ == "__main__":
 	umls_directory = '/shared/hltdir1/disk1/home/max/data/ontologies/umls_2019/2019AA-full/2019AA/'
 	data_folder = 'data'
 	save_directory = 'models'
-	model_name = 'umls-kbilm-v3'
+	model_name = 'umls-kbilm-v4'
 	pre_model_name = 'monologg/biobert_v1.1_pubmed'
 	learning_rate = 1e-5
-	epochs = 10
+	epochs = 3
 	#  {3, 6, 9, 12, 18, 24, 30}
 	gamma = 24.0
 	#  {0.5, 1.0}
@@ -138,6 +139,14 @@ if __name__ == "__main__":
 		weight_decay=weight_decay
 	)
 
+	checkpoint_callback = ModelCheckpoint(
+		verbose=True,
+		monitor='val_loss',
+		save_last=True,
+		save_top_k=2,
+		mode='min'
+	)
+
 	logging.info('Training...')
 	if use_tpus:
 		logging.warning('Gradient clipping slows down TPU training drastically, disabled for now.')
@@ -148,7 +157,8 @@ if __name__ == "__main__":
 			precision=precision,
 			val_check_interval=val_check_interval,
 			deterministic=deterministic,
-			callbacks=callbacks
+			callbacks=callbacks,
+			checkpoint_callback=checkpoint_callback
 		)
 	else:
 		if len(gpus) > 1:
@@ -164,10 +174,8 @@ if __name__ == "__main__":
 			distributed_backend=backend,
 			gradient_clip_val=gradient_clip_val,
 			deterministic=deterministic,
-			callbacks=[
-				train_neg_sampler,
-				val_neg_sampler
-			]
+			callbacks=callbacks,
+			checkpoint_callback=checkpoint_callback
 		)
 	trainer.fit(model, train_dataloader, val_dataloader)
 

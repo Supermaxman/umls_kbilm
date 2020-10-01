@@ -48,8 +48,7 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		pos_loss = -nn.LogSigmoid()(self.gamma - pos_energies)
 		neg_loss = -neg_probs * nn.LogSigmoid()(neg_energies - self.gamma)
 		neg_loss = neg_loss.sum(dim=1)
-		batch_loss = pos_loss + neg_loss
-		loss = batch_loss.mean()
+		loss = pos_loss + neg_loss
 		return pos_energies, neg_energies, neg_probs, loss
 
 	def training_step(self, batch, batch_nb):
@@ -57,33 +56,55 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		batch_size = energies.shape[0]
 		pos_energies, neg_energies, neg_probs, loss = self._energy_loss(energies)
 
+		loss = loss.mean()
+
 		neg_size = neg_energies.shape[1]
 		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
 
 		exp_acc = (neg_probs * pos_correct).sum(dim=1).sum(dim=0) / batch_size
 		uniform_acc = pos_correct.sum(dim=1).sum(dim=0) / (batch_size * neg_size)
 
-		# print(met.metrics_report())
-		result = pl.TrainResult(loss)
-		result.log('train_loss', loss)
-		result.log('train_exp_acc', exp_acc)
-		result.log('train_uniform_acc', uniform_acc)
+		result = {
+			'loss': loss,
+			'log': {
+				'train_loss': loss,
+				'train_exp_acc': exp_acc,
+				'train_uniform_acc': uniform_acc
+			}
+		}
 		return result
 
 	def validation_step(self, batch, batch_nb):
 		energies = self(**batch)
-		batch_size = energies.shape[0]
 		pos_energies, neg_energies, neg_probs, loss = self._energy_loss(energies)
 
 		neg_size = neg_energies.shape[1]
 		pos_correct = (pos_energies.unsqueeze(1) < neg_energies).float()
 
-		exp_acc = (neg_probs * pos_correct).sum(dim=1).sum(dim=0) / batch_size
-		uniform_acc = pos_correct.sum(dim=1).sum(dim=0) / (batch_size * neg_size)
-		result = pl.EvalResult()
-		result.log('val_loss', loss)
-		result.log('val_exp_acc', exp_acc)
-		result.log('val_uniform_acc', uniform_acc)
+		exp_acc = (neg_probs * pos_correct).sum(dim=1)
+		uniform_acc = pos_correct.sum(dim=1) / neg_size
+
+		result = {
+			'val_loss': loss,
+			'val_exp_acc': exp_acc,
+			'val_uniform_acc': uniform_acc
+		}
+
+		return result
+
+	def validation_end(self, outputs):
+		loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+		exp_acc = torch.stack([x['val_exp_acc'] for x in outputs]).mean()
+		uniform_acc = torch.stack([x['val_uniform_acc'] for x in outputs]).mean()
+
+		result = {
+			'val_loss': loss,
+			'log': {
+				'val_loss': loss,
+				'val_exp_acc': exp_acc,
+				'val_uniform_acc': uniform_acc
+			}
+		}
 		return result
 
 	def configure_optimizers(self):
