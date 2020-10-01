@@ -85,22 +85,18 @@ class KnowledgeBaseInfusedBert(pl.LightningModule):
 		uniform_acc = pos_correct.sum(dim=1) / neg_size
 
 		result = {
+			'val_loss': loss.mean(),
 			'val_batch_loss': loss,
 			'val_batch_exp_acc': exp_acc,
 			'val_batch_uniform_acc': uniform_acc
 		}
-		print('--------validation_step---------')
 
 		return result
 
 	def validation_end(self, outputs):
-		loss = torch.stack([x['val_batch_loss'] for x in outputs]).mean().item()
-		exp_acc = torch.stack([x['val_batch_exp_acc'] for x in outputs]).mean().item()
-		uniform_acc = torch.stack([x['val_batch_uniform_acc'] for x in outputs]).mean().item()
-		print('--------validation_end---------')
-		print(loss)
-		print(type(loss))
-		print('--------validation_end---------')
+		loss = torch.cat([x['val_batch_loss'] for x in outputs], dim=0).mean()
+		exp_acc = torch.stack([x['val_batch_exp_acc'] for x in outputs], dim=0).mean()
+		uniform_acc = torch.stack([x['val_batch_uniform_acc'] for x in outputs], dim=0).mean()
 
 		result = {
 			'val_loss': loss,
