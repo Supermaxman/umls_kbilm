@@ -73,6 +73,7 @@ if __name__ == "__main__":
 	concepts, relation_types, relations = load_umls(umls_directory, data_folder)
 	concept_list = list(concepts.values())
 	train_data, val_data, _ = split_data(relations)
+	train_relations_set = set(train_data)
 	train_dataset = UmlsRelationDataset(train_data)
 	val_dataset = UmlsRelationDataset(val_data)
 
@@ -85,16 +86,16 @@ if __name__ == "__main__":
 	# val_neg_sampler = train_neg_sampler
 	train_neg_sampler = UniformNegativeSampler(
 		concept_list,
+		train_relations_set,
 		negative_sample_size,
-		shuffle=True,
 		seed=seed,
 		train_callback=True
 	)
 	callbacks.append(train_neg_sampler)
 	val_neg_sampler = UniformNegativeSampler(
 		concept_list,
+		train_relations_set,
 		negative_sample_size,
-		shuffle=False,
 		seed=seed,
 		val_callback=True
 	)
